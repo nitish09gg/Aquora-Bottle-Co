@@ -1,10 +1,5 @@
-
-
-function Bottles(){
-    return (
-        <>Bottles</>
-    )
+function Bottles() {
+  return <>Bottles</>;
 }
 
 export default Bottles;
-

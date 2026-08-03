@@ -1,0 +1,371 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f7fcff;
+  color: #0f172a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(35px, -28px, 0) scale(1.08);
+  }
+}
+
+@keyframes pageOpen {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-100px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes visualEnter {
+  from {
+    opacity: 0;
+    transform: translateX(100px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes bottleFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(-16px) rotate(-1deg);
+  }
+}
+
+@keyframes waterMove {
+  0%,
+  100% {
+    transform: translateX(-8%);
+  }
+
+  50% {
+    transform: translateX(8%);
+  }
+}
+
+@keyframes truckMove {
+  0% {
+    left: 6%;
+  }
+
+  48% {
+    left: 63%;
+  }
+
+  52% {
+    left: 63%;
+  }
+
+  100% {
+    left: 6%;
+  }
+}
+
+.water-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(5px);
+  pointer-events: none;
+  animation: drift 12s ease-in-out infinite;
+}
+
+.water-blob-one {
+  top: 4%;
+  left: -10rem;
+  width: 27rem;
+  height: 27rem;
+  background: rgba(125, 211, 252, 0.35);
+}
+
+.water-blob-two {
+  top: 18%;
+  right: -9rem;
+  width: 23rem;
+  height: 23rem;
+  background: rgba(103, 232, 249, 0.28);
+  animation-delay: -4s;
+}
+
+.water-blob-three {
+  bottom: -12rem;
+  left: 32%;
+  width: 31rem;
+  height: 31rem;
+  background: rgba(186, 230, 253, 0.45);
+  animation-delay: -8s;
+}
+
+.auth-page-enter {
+  animation: pageOpen 0.35s ease-out both;
+}
+
+.auth-panel-enter {
+  animation: panelEnter 0.8s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.auth-visual-enter {
+  animation: visualEnter 0.9s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Bottle customization animation */
+
+.auth-bottle {
+  position: relative;
+  width: 174px;
+  height: 320px;
+  animation: bottleFloat 5s ease-in-out infinite;
+}
+
+.auth-bottle-cap {
+  position: absolute;
+  top: 0;
+  left: 51px;
+  width: 72px;
+  height: 35px;
+  border-radius: 13px 13px 5px 5px;
+  background: linear-gradient(90deg, #0369a1, #0284c7, #0369a1);
+  box-shadow: 0 9px 16px rgba(2, 132, 199, 0.24);
+}
+
+.auth-bottle-neck {
+  position: absolute;
+  top: 32px;
+  left: 46px;
+  width: 82px;
+  height: 67px;
+  border: 1px solid #bae6fd;
+  border-radius: 0 0 25px 25px;
+  background: linear-gradient(90deg, #e0f2fe, #ffffff, #e0f2fe);
+}
+
+.auth-bottle-body {
+  position: absolute;
+  top: 87px;
+  width: 174px;
+  height: 233px;
+  overflow: hidden;
+  border: 1px solid #bae6fd;
+  border-radius: 40px 40px 46px 46px;
+  background: linear-gradient(90deg, #e0f2fe, #ffffff, #e0f2fe);
+  box-shadow: 0 23px 38px rgba(14, 165, 233, 0.22);
+}
+
+.auth-bottle-water {
+  position: absolute;
+  bottom: 0;
+  left: -10%;
+  width: 120%;
+  height: 74px;
+  background: linear-gradient(
+    to top,
+    rgba(34, 211, 238, 0.82),
+    rgba(186, 230, 253, 0.26)
+  );
+  animation: waterMove 4s ease-in-out infinite;
+}
+
+.auth-bottle-label {
+  position: absolute;
+  top: 70px;
+  left: 22px;
+  width: 130px;
+  border: 1px solid #e0f2fe;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 18px 8px;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.08);
+}
+
+.auth-bottle-label p {
+  margin: 0;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+}
+
+.auth-bottle-label span {
+  display: block;
+  width: 40px;
+  height: 1px;
+  margin: 10px auto;
+  background: #7dd3fc;
+}
+
+.auth-bottle-label small {
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+/* Delivery animation */
+
+.delivery-map {
+  position: relative;
+  height: 190px;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)),
+    linear-gradient(135deg, #dff4ff, #ecfeff);
+}
+
+.delivery-route {
+  position: absolute;
+  top: 95px;
+  right: 48px;
+  left: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    #38bdf8 0 12px,
+    transparent 12px 20px
+  );
+}
+
+.delivery-truck {
+  position: absolute;
+  top: 64px;
+  width: 60px;
+  height: 34px;
+  animation: truckMove 8s ease-in-out infinite;
+}
+
+.delivery-truck-cargo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 39px;
+  height: 27px;
+  border-radius: 8px 4px 4px 8px;
+  background: #0284c7;
+  box-shadow: 0 7px 12px rgba(2, 132, 199, 0.22);
+}
+
+.delivery-truck-cab {
+  position: absolute;
+  right: 0;
+  bottom: 7px;
+  width: 24px;
+  height: 20px;
+  border-radius: 4px 8px 4px 3px;
+  background: #0ea5e9;
+}
+
+.delivery-truck-cab::before {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 10px;
+  height: 7px;
+  border-radius: 2px;
+  background: #e0f2fe;
+  content: "";
+}
+
+.delivery-wheel {
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border: 3px solid #1e293b;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.delivery-wheel-left {
+  left: 8px;
+}
+
+.delivery-wheel-right {
+  right: 5px;
+}
+
+.delivery-start,
+.delivery-destination {
+  position: absolute;
+  top: 116px;
+  text-align: center;
+}
+
+.delivery-start {
+  left: 21px;
+}
+
+.delivery-destination {
+  right: 15px;
+}
+
+.delivery-start span,
+.delivery-destination span {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 0 auto 7px;
+  border-radius: 999px;
+  background: #0284c7;
+  box-shadow: 0 0 0 6px rgba(125, 211, 252, 0.5);
+}
+
+.delivery-destination span {
+  background: #059669;
+}
+
+.delivery-start p,
+.delivery-destination p {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .water-blob,
+  .auth-page-enter,
+  .auth-panel-enter,
+  .auth-visual-enter,
+  .auth-bottle,
+  .auth-bottle-water,
+  .delivery-truck {
+    animation: none;
+  }
+}

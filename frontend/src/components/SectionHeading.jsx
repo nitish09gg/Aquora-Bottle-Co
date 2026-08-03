@@ -1,7 +1,5 @@
-function SectionHeading(){
-    return (
-        <>SectionHeading</>
-    )
+function SectionHeading() {
+  return <>SectionHeading</>;
 }
 
 export default SectionHeading;

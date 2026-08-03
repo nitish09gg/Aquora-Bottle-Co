@@ -1,8 +1,5 @@
-
-function BottleCard(){
-    return (
-        <>Bottle Card</>
-    )
+function BottleCard() {
+  return <>Bottle Card</>;
 }
 
 export default BottleCard;

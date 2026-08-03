@@ -1,10 +1,5 @@
-
-
-function Faq(){
-    return (
-        <>Faq</>
-    )
+function Faq() {
+  return <>Faq</>;
 }
 
 export default Faq;
-

@@ -1,8 +1,5 @@
-
-function Hero(){
-    return (
-        <> Hero</>
-    )
+function Hero() {
+  return <> Hero</>;
 }
 
 export default Hero;

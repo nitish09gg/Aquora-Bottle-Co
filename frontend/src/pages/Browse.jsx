@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const bottles = [
   {
@@ -25,6 +26,26 @@ const bottles = [
 ];
 
 function Browse() {
+  const navigate = useNavigate();
+  const { user, setUser } = useAuth();
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4040";
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      setUser(null);
+
+      navigate("/", { replace: true });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F7FCFF] text-slate-900">
       <header className="border-b border-sky-100 bg-white/80 backdrop-blur">
@@ -39,12 +60,36 @@ function Browse() {
             </span>
           </Link>
 
-          <Link
-            to="/"
-            className="rounded-full border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
-          >
-            Logout
-          </Link>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {user?.photo ? (
+                <img
+                  src={user.photo}
+                  alt={user.name}
+                  className="h-10 w-10 rounded-full border border-sky-200 object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 font-bold text-white">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <div className="hidden sm:block">
+                <p className="text-sm font-semibold text-slate-800">
+                  {user?.name}
+                </p>
+
+                <p className="text-xs text-slate-500">{user?.email}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="rounded-full border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+            >
+              Logout
+            </button>
+          </div>
         </nav>
       </header>
 

@@ -1,6 +1,6 @@
 const UserModel = require("../models/UserModel");
 const createSecretToken = require("../utils/SecretToken");
-
+const validateEmail = require("../utils/ValidateEmail.js");
 const isProduction = process.env.NODE_ENV === "production";
 
 const cookieOptions = {
@@ -14,6 +14,8 @@ const publicUser = (user) => ({
   id: user._id,
   name: user.name,
   email: user.email,
+  photo: user.photo,
+  provider: user.provider,
   createdAt: user.createdAt,
 });
 
@@ -25,6 +27,32 @@ const Signup = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Name, email, and password are required.",
+      });
+    }
+
+    const emailData = await validateEmail(email);
+
+    if (!emailData) {
+      return res.status(503).json({
+        success: false,
+        message: "Email validation service is temporarily unavailable.",
+      });
+    }
+
+    if (!emailData.is_valid_format.value) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address.",
+      });
+    }
+
+    if (
+      emailData.deliverability &&
+      emailData.deliverability !== "DELIVERABLE"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Email doesn't exist!",
       });
     }
 
@@ -54,6 +82,49 @@ const Signup = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to create your account.",
+    });
+  }
+};
+
+const GoogleLogin = async (req, res) => {
+  try {
+    const { name, email, firebaseUid, photo } = req.body;
+
+    if (!email || !firebaseUid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Google account.",
+      });
+    }
+
+    let user = await UserModel.findOne({ email });
+
+    if (!user) {
+      user = await UserModel.create({
+        name,
+        email,
+        firebaseUid,
+        photo,
+        provider: "google",
+      });
+    }
+
+    const token = createSecretToken(user._id.toString());
+
+    return res
+      .status(200)
+      .cookie("token", token, cookieOptions)
+      .json({
+        success: true,
+        message: "Google login successful.",
+        user: publicUser(user),
+      });
+  } catch (error) {
+    console.error("Google Login:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to login with Google.",
     });
   }
 };
@@ -131,6 +202,7 @@ const getCurrentUser = async (req, res) => {
 module.exports = {
   Signup,
   Login,
+  GoogleLogin,
   Logout,
   getCurrentUser,
 };

@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  signInWithPopup,
+} from "firebase/auth";
+import { useAuth } from "../context/AuthContext";
+import { auth, googleProvider } from "../services/firebase";
 import AuthLayout from "../components/AuthLayout";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4040";
 
 function Login() {
   const navigate = useNavigate();
-
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -46,11 +53,52 @@ function Login() {
         throw new Error(data.message || "Login failed. Please try again.");
       }
 
+      setUser(data.user);
+
       navigate("/browse", { replace: true });
     } catch (error) {
       setError(error.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError("");
+
+      const result = await signInWithPopup(auth, googleProvider);
+
+      const user = result.user;
+
+      const response = await fetch(`${API_URL}/api/auth/google`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: user.displayName,
+          email: user.email,
+          firebaseUid: user.uid,
+          photo: user.photoURL,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message);
+      }
+      
+      setUser(data.user);
+      
+      navigate("/browse", {
+        replace: true,
+      });
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
     }
   };
 
@@ -134,6 +182,28 @@ function Login() {
           className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Signing in..." : "Sign in"}
+        </button>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+
+          <div className="relative flex justify-center">
+            <span className="bg-white px-4 text-sm text-slate-500">OR</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          <img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google"
+            className="h-5 w-5"
+          />
+          Continue with Google
         </button>
       </form>
     </AuthLayout>

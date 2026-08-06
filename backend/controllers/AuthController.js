@@ -194,12 +194,26 @@ const ForgotPassword = async (req, res) => {
 
     console.log("STEP 4");
 
-    return res.json({
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
       success: true,
-      message: "Test successful",
+      message: "Token saved successfully.",
     });
+
   } catch (error) {
     console.error("Forgot Password Error:", error);
+
     return res.status(500).json({
       success: false,
       message: error.message,

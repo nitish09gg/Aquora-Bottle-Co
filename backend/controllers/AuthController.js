@@ -2,6 +2,8 @@ const UserModel = require("../models/UserModel");
 const createSecretToken = require("../utils/SecretToken");
 const validateEmail = require("../utils/ValidateEmail.js");
 const isProduction = process.env.NODE_ENV === "production";
+const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto");
 
 const cookieOptions = {
   httpOnly: true,
@@ -66,6 +68,7 @@ const Signup = async (req, res) => {
     }
 
     const user = await UserModel.create({ name, email, password });
+
     const token = createSecretToken(user._id.toString());
 
     return res
@@ -169,6 +172,135 @@ const Login = async (req, res) => {
   }
 };
 
+const ForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required.",
+      });
+    }
+
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message:
+          "If an account exists with this email, a password reset link has been sent.",
+      });
+    }
+    console.log(process.env.FRONTEND_URL);
+    console.log(process.env.EMAIL_USER);
+    // console.log(process.env.EMAIL_PASS);
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    user.resetPasswordToken = hashedToken;
+
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset URL
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    // Send email
+    await sendEmail({
+      to: user.email,
+      subject: "Reset Your Password",
+      html: `
+    <h2>Password Reset Request</h2>
+
+    <p>You requested to reset your password.</p>
+
+    <p>
+      <a href="${resetUrl}">
+        Reset Password
+      </a>
+    </p>
+
+    <p>This link expires in 15 minutes.</p>
+
+    <p>If you didn't request this, you can safely ignore this email.</p>
+  `,
+    });
+
+    // Return response
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
+    });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong.",
+    });
+  }
+};
+
+const ResetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required.",
+      });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    console.log("Token from URL:", token);
+    console.log("Hashed Token:", hashedToken);
+    const user = await UserModel.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: {
+        $gt: Date.now(),
+      },
+    });
+    console.log(user);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset link is invalid or has expired.",
+      });
+    }
+
+    // Set the new password
+    user.password = password;
+
+    // Remove reset token and expiry
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    // Save user (pre("save") middleware will hash the password)
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful. Please login.",
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong.",
+    });
+  }
+};
+
 const Logout = (req, res) => {
   return res
     .clearCookie("token", {
@@ -203,6 +335,8 @@ module.exports = {
   Signup,
   Login,
   GoogleLogin,
+  ForgotPassword,
+  ResetPassword,
   Logout,
   getCurrentUser,
 };

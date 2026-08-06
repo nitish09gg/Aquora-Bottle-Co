@@ -4,10 +4,11 @@ const {
   Signup,
   Login,
   GoogleLogin,
+  ForgotPassword,
+  ResetPassword,
   Logout,
   getCurrentUser,
 } = require("../controllers/AuthController");
-
 const {
   userVerification,
 } = require("../middlewares/AuthMiddleware");
@@ -15,6 +16,8 @@ const {
 router.post("/signup", Signup);
 router.post("/login", Login);
 router.post("/google", GoogleLogin);
+router.post("/forgot-password", ForgotPassword);
+router.post("/reset-password/:token", ResetPassword);
 router.post("/logout", Logout);
 router.get("/me", userVerification, getCurrentUser);
 

@@ -174,16 +174,15 @@ const Login = async (req, res) => {
 
 const ForgotPassword = async (req, res) => {
   try {
+    console.log("STEP 1");
+
     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required.",
-      });
-    }
+    console.log("STEP 2", email);
 
     const user = await UserModel.findOne({ email });
+
+    console.log("STEP 3");
 
     if (!user) {
       return res.status(200).json({
@@ -192,58 +191,18 @@ const ForgotPassword = async (req, res) => {
           "If an account exists with this email, a password reset link has been sent.",
       });
     }
-    console.log(process.env.FRONTEND_URL);
-    console.log(process.env.EMAIL_USER);
-    // console.log(process.env.EMAIL_PASS);
-    const resetToken = crypto.randomBytes(32).toString("hex");
 
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+    console.log("STEP 4");
 
-    user.resetPasswordToken = hashedToken;
-
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
-
-    await user.save({ validateBeforeSave: false });
-
-    // Create reset URL
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
-    // Send email
-    await sendEmail({
-      to: user.email,
-      subject: "Reset Your Password",
-      html: `
-    <h2>Password Reset Request</h2>
-
-    <p>You requested to reset your password.</p>
-
-    <p>
-      <a href="${resetUrl}">
-        Reset Password
-      </a>
-    </p>
-
-    <p>This link expires in 15 minutes.</p>
-
-    <p>If you didn't request this, you can safely ignore this email.</p>
-  `,
-    });
-
-    // Return response
-    return res.status(200).json({
+    return res.json({
       success: true,
-      message:
-        "If an account exists with this email, a password reset link has been sent.",
+      message: "Test successful",
     });
   } catch (error) {
     console.error("Forgot Password Error:", error);
-
     return res.status(500).json({
       success: false,
-      message: "Something went wrong.",
+      message: error.message,
     });
   }
 };

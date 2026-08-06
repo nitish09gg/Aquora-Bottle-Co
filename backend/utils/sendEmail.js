@@ -9,12 +9,20 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async ({ to, subject, html }) => {
+  console.log("EMAIL_USER:", process.env.EMAIL_USER);
+  console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+
+  await transporter.verify();
+  console.log("SMTP Connection Successful");
+
   await transporter.sendMail({
     from: `"Aquora Bottle Co." <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
   });
+
+  console.log("Mail Sent Successfully");
 };
 
 module.exports = sendEmail;

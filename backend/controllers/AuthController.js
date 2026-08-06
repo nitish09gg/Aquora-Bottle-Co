@@ -206,11 +206,32 @@ const ForgotPassword = async (req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
-    return res.status(200).json({
-      success: true,
-      message: "Token saved successfully.",
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    console.log("Reset URL:", resetUrl);
+
+    await sendEmail({
+      to: user.email,
+      subject: "Reset Your Password",
+      html: `
+    <h2>Password Reset Request</h2>
+    <p>You requested to reset your password.</p>
+    <p>
+      <a href="${resetUrl}">
+        Reset Password
+      </a>
+    </p>
+    <p>This link expires in 15 minutes.</p>
+  `,
     });
 
+    console.log("Email sent successfully!");
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
+    });
   } catch (error) {
     console.error("Forgot Password Error:", error);
 

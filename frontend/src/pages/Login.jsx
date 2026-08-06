@@ -84,15 +84,15 @@ function Login() {
           photo: user.photoURL,
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok || !data.success) {
         throw new Error(data.message);
       }
-      
+
       setUser(data.user);
-      
+
       navigate("/browse", {
         replace: true,
       });
@@ -156,12 +156,12 @@ function Login() {
               Password
             </label>
 
-            <button
-              type="button"
+            <Link
+              to="/forgot-password"
               className="text-sm font-semibold text-sky-600 transition hover:text-sky-700"
             >
               Forgot password?
-            </button>
+            </Link>
           </div>
 
           <input

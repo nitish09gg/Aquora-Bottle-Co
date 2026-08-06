@@ -1,37 +1,14 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    family: 4, // Force IPv4
-  });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
-  try {
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-
-    await transporter.verify();
-    console.log("SMTP Connection Successful");
-
-    await transporter.sendMail({
-      from: `"Aquora Bottle Co." <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-
-    console.log("Mail Sent Successfully");
-  } catch (err) {
-    console.error("Nodemailer Error:");
-    console.error(err);
-    throw err;
-  }
+  await resend.emails.send({
+    from: "Aquora Bottle Co <onboarding@resend.dev>",
+    to,
+    subject,
+    html,
+  });
 };
 
 module.exports = sendEmail;

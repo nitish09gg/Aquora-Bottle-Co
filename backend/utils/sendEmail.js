@@ -1,37 +1,37 @@
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: false,          // true only for port 465
-  requireTLS: true,       // use this with port 587
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
+const axios = require("axios");
 
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    console.log("Connecting to SMTP...");
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: {
+          name: "Aquora Bottle Co",
+          email: process.env.EMAIL_FROM,
+        },
+        to: [
+          {
+            email: to,
+          },
+        ],
+        subject,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    await transporter.verify();
-    console.log("SMTP verified!");
-
-    const info = await transporter.sendMail({
-      from: `"Aquora Bottle Co" <${process.env.EMAIL_FROM}>`,
-      to,
-      subject,
-      html,
-    });
-
-    console.log("Email sent:", info.messageId);
-  } catch (err) {
-    console.error("SMTP Error:", err);
-    throw err;
+    console.log("Email sent successfully:", response.data);
+  } catch (error) {
+    console.error(
+      "Brevo API Error:",
+      error.response?.data || error.message
+    );
+    throw error;
   }
 };
 

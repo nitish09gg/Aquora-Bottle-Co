@@ -9,7 +9,7 @@ function Navbar() {
     <header className="sticky top-0 z-50 bg-white/10 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3">
+        <Link to={user ? "/browse" : "/"} className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-lg font-bold text-white shadow-lg">
             A
           </span>
@@ -21,23 +21,39 @@ function Navbar() {
 
         {/* Navigation Links */}
         <div className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
-          <a href="#how-it-works" className="transition hover:text-sky-600">
-            How It Works
-          </a>
+          {!user && (
+            <>
+              <a href="#how-it-works" className="transition hover:text-sky-600">
+                How It Works
+              </a>
 
-          <a href="#collection" className="transition hover:text-sky-600">
-            Bottle Collection
-          </a>
+              <a href="#collection" className="transition hover:text-sky-600">
+                Bottle Collection
+              </a>
 
-          <a href="#sustainability" className="transition hover:text-sky-600">
-            Sustainability
-          </a>
+              <a
+                href="#sustainability"
+                className="transition hover:text-sky-600"
+              >
+                Sustainability
+              </a>
+            </>
+          )}
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {loading ? null : user ? (
-            <ProfileDropdown />
+            <>
+              <Link
+                to="/browse"
+                className="rounded-full border border-sky-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-600 hover:text-sky-600"
+              >
+                Explore Collection
+              </Link>
+
+              <ProfileDropdown />
+            </>
           ) : (
             <>
               <Link

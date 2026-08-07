@@ -209,7 +209,7 @@ const ForgotPassword = async (req, res) => {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     console.log("Reset URL:", resetUrl);
-
+    console.log("Sending reset email to:", user.email);
     await sendEmail({
       to: user.email,
       subject: "Reset Your Password",
@@ -254,16 +254,25 @@ const ResetPassword = async (req, res) => {
       });
     }
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-    console.log("Token from URL:", token);
-    console.log("Hashed Token:", hashedToken);
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters.",
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
     const user = await UserModel.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: {
         $gt: Date.now(),
       },
     });
-    console.log(user);
+
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -271,14 +280,14 @@ const ResetPassword = async (req, res) => {
       });
     }
 
-    // Set the new password
+    // Set new password
     user.password = password;
 
-    // Remove reset token and expiry
+    // Clear reset token
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
-    // Save user (pre("save") middleware will hash the password)
+    // Save user (password will be hashed by pre("save"))
     await user.save();
 
     return res.status(200).json({

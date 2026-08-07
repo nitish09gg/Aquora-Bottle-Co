@@ -174,25 +174,18 @@ const Login = async (req, res) => {
 
 const ForgotPassword = async (req, res) => {
   try {
-    console.log("STEP 1");
 
     const { email } = req.body;
-
-    console.log("STEP 2", email);
-
     const user = await UserModel.findOne({ email });
-
-    console.log("STEP 3");
 
     if (!user) {
       return res.status(200).json({
         success: true,
         message:
-          "If an account exists with this email, a password reset link has been sent.",
+          "Reset password link has been sent to your registered email",
       });
     }
 
-    console.log("STEP 4");
 
     const resetToken = crypto.randomBytes(32).toString("hex");
 
@@ -208,8 +201,6 @@ const ForgotPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
     
-    console.log("Reset URL:", resetUrl);
-    console.log("Sending reset email to:", user.email);
     await sendEmail({
       to: user.email,
       subject: "Reset Your Password",
@@ -225,7 +216,6 @@ const ForgotPassword = async (req, res) => {
   `,
     });
 
-    console.log("Email sent successfully!");
 
     return res.status(200).json({
       success: true,
@@ -233,8 +223,6 @@ const ForgotPassword = async (req, res) => {
         "If an account exists with this email, a password reset link has been sent.",
     });
   } catch (error) {
-    console.error("Forgot Password Error:", error);
-
     return res.status(500).json({
       success: false,
       message: error.message,

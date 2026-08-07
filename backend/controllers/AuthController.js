@@ -174,18 +174,15 @@ const Login = async (req, res) => {
 
 const ForgotPassword = async (req, res) => {
   try {
-
     const { email } = req.body;
     const user = await UserModel.findOne({ email });
 
     if (!user) {
       return res.status(200).json({
         success: true,
-        message:
-          "Reset password link has been sent to your registered email",
+        message: "Reset password link has been sent to your registered email",
       });
     }
-
 
     const resetToken = crypto.randomBytes(32).toString("hex");
 
@@ -200,7 +197,7 @@ const ForgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    
+
     await sendEmail({
       to: user.email,
       subject: "Reset Your Aquora Password",
@@ -214,7 +211,10 @@ const ForgotPassword = async (req, res) => {
           <h3 style="color: #111827;">
             Password Reset Request
           </h3>
-    
+          <p style="color:#374151; font-size:16px;">
+        Hi <strong>${user.name}</strong>,
+      </p>
+      
           <p style="color: #4b5563;">
             We received a request to reset the password for your Aquora account.
           </p>
@@ -263,11 +263,9 @@ const ForgotPassword = async (req, res) => {
       `,
     });
 
-
     return res.status(200).json({
       success: true,
-      message:
-        "Reset password link has been sent to your registered email",
+      message: "Reset password link has been sent to your registered email",
     });
   } catch (error) {
     return res.status(500).json({
@@ -296,10 +294,7 @@ const ResetPassword = async (req, res) => {
       });
     }
 
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await UserModel.findOne({
       resetPasswordToken: hashedToken,

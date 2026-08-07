@@ -28,7 +28,6 @@ export function AuthProvider({ children }) {
           setUser(null);
         }
       } catch (error) {
-        console.error(error);
         setUser(null);
       } finally {
         setLoading(false);

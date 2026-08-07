@@ -1,7 +1,24 @@
-import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar"
+import { Link, Navigate} from "react-router-dom";
+import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
+
 function Home() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/browse" replace />;
+  }
+  
   return (
+
     <div className="relative min-h-screen">
       <div className="water-blob water-blob-one" />
       <div className="water-blob water-blob-two" />

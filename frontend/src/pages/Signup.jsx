@@ -13,7 +13,8 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4040";
 
 function Signup() {
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, setPageLoading, setLoadingConfig } = useAuth();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,6 +44,11 @@ function Signup() {
     setIsSubmitting(true);
 
     try {
+      setLoadingConfig({
+        title: "Creating your account...",
+        message: "Setting up your Aquora account.",
+      });
+      setPageLoading(true);
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: "POST",
         credentials: "include",
@@ -64,12 +70,14 @@ navigate("/browse", { replace: true });
     } catch (error) {
       setError(error.message);
     } finally {
+      setPageLoading(false);
       setIsSubmitting(false);
     }
   };
 
   const sendOTP = async () => {
     try {
+
       if (phone.length !== 10) {
         setError("Please enter a valid 10-digit phone number.");
         return;
@@ -125,7 +133,12 @@ navigate("/browse", { replace: true });
   const handleGoogleSignIn = async () => {
     try {
       setError("");
-
+      setLoadingConfig({
+        title: "Signing in with Google...",
+        message: "Connecting your Google account to Aquora.",
+      });
+    
+      setPageLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
 
       const user = result.user;
@@ -149,15 +162,18 @@ navigate("/browse", { replace: true });
       if (!response.ok || !data.success) {
         throw new Error(data.message);
       }
-      
+
       setUser(data.user);
-      
+
       navigate("/browse", {
         replace: true,
       });
+      console.log("Navigated to browse");
     } catch (err) {
       console.error(err);
       setError(err.message);
+    }finally{
+      setPageLoading(false);
     }
   };
 
@@ -282,7 +298,8 @@ navigate("/browse", { replace: true });
             disabled={isSubmitting}
             className="mt-2 w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Creating account..." : "Create Account"}
+            Create Account
+            {/* {isSubmitting ? "Creating account..." : "Create Account"} */}
           </button>
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">

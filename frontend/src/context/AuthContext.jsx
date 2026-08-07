@@ -7,6 +7,12 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
+
+  const [loadingConfig, setLoadingConfig] = useState({
+    title: "Welcome to Aquora",
+    message: "Preparing your collection...",
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -17,10 +23,10 @@ export function AuthProvider({ children }) {
 
         const data = await response.json();
         console.log("Auth API Response:", {
-            status: response.status,
-            ok: response.ok,
-            data,
-          });
+          status: response.status,
+          ok: response.ok,
+          data,
+        });
 
         if (response.ok && data.success) {
           setUser(data.user);
@@ -46,19 +52,23 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error(err);
     }
-  
+
     setUser(null);
   };
 
   return (
     <AuthContext.Provider
-    value={{
-      user,
-      setUser,
-      loading,
-      logout,
-    }}
-  >
+      value={{
+        user,
+        setUser,
+        loading,
+        logout,
+        pageLoading,
+        setPageLoading,
+        loadingConfig,
+        setLoadingConfig,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

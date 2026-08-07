@@ -7,8 +7,16 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import ResetPassword from "./pages/ResetPassword";
 import ForgotPassword from "./pages/ForgotPassword";
+import { useAuth } from "./context/AuthContext";
+import LoadingScreen from "./components/LoadingScreen";
 
 function App() {
+
+  const { pageLoading } = useAuth();
+
+  if (pageLoading) {
+    return <LoadingScreen />;
+  }
   return (
     <Routes>
       {/* Home */}

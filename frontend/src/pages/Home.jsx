@@ -1,22 +1,21 @@
 import { Link, Navigate} from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
+import LoadingScreen from "../components/LoadingScreen";
 
 function Home() {
   const { user, loading } = useAuth();
-
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <LoadingScreen
+    title="Welcome to Aquora"
+    message="Preparing your collection..."
+  />;
   }
 
   if (user) {
     return <Navigate to="/browse" replace />;
   }
-  
+
   return (
 
     <div className="relative min-h-screen">

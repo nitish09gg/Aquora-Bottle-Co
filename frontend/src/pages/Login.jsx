@@ -13,7 +13,8 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4040";
 
 function Login() {
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, setPageLoading, setLoadingConfig } = useAuth();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -38,6 +39,13 @@ function Login() {
     setIsSubmitting(true);
 
     try {
+      setLoadingConfig({
+        title: "Signing you in...",
+        message: "Verifying your account securely.",
+      });
+
+      setPageLoading(true);
+
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         credentials: "include",
@@ -55,10 +63,13 @@ function Login() {
 
       setUser(data.user);
 
-      navigate("/browse", { replace: true });
+      navigate("/browse", {
+        replace: true,
+      });
     } catch (error) {
       setError(error.message);
     } finally {
+      setPageLoading(false);
       setIsSubmitting(false);
     }
   };
@@ -66,9 +77,13 @@ function Login() {
   const handleGoogleSignIn = async () => {
     try {
       setError("");
+      setLoadingConfig({
+        title: "Signing you in...",
+        message: "Verifying your account securely.",
+      });
+      setPageLoading(true);
 
       const result = await signInWithPopup(auth, googleProvider);
-
       const user = result.user;
 
       const response = await fetch(`${API_URL}/api/auth/google`, {
@@ -88,7 +103,7 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message);
+        throw new Error(data.message || "Google login failed.");
       }
 
       setUser(data.user);
@@ -99,9 +114,10 @@ function Login() {
     } catch (err) {
       console.error(err);
       setError(err.message);
+    } finally {
+      setPageLoading(false);
     }
   };
-
   return (
     <AuthLayout
       mode="login"
@@ -181,7 +197,10 @@ function Login() {
           disabled={isSubmitting}
           className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {/* {isSubmitting ? "Signing in..." : "Sign in"} */}
+       
+            Sign In
+        
         </button>
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">

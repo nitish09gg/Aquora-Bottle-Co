@@ -203,24 +203,71 @@ const ForgotPassword = async (req, res) => {
     
     await sendEmail({
       to: user.email,
-      subject: "Reset Your Password",
+      subject: "Reset Your Aquora Password",
       html: `
-    <h2>Password Reset Request</h2>
-    <p>You requested to reset your password.</p>
-    <p>
-      <a href="${resetUrl}">
-        Reset Password
-      </a>
-    </p>
-    <p>This link expires in 15 minutes.</p>
-  `,
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+    
+          <h2 style="color: #2563eb; margin-bottom: 20px;">
+            Aquora Bottle Co.
+          </h2>
+    
+          <h3 style="color: #111827;">
+            Password Reset Request
+          </h3>
+    
+          <p style="color: #4b5563;">
+            We received a request to reset the password for your Aquora account.
+          </p>
+    
+          <p style="color: #4b5563;">
+            Click the button below to create a new password.
+          </p>
+    
+          <div style="margin: 30px 0;">
+            <a
+              href="${resetUrl}"
+              style="
+                background:#2563eb;
+                color:#ffffff;
+                padding:12px 24px;
+                text-decoration:none;
+                border-radius:6px;
+                font-weight:bold;
+                display:inline-block;
+              "
+            >
+              Reset Password
+            </a>
+          </div>
+    
+          <p style="color:#6b7280;">
+            This link will expire in <strong>15 minutes</strong>.
+          </p>
+    
+          <p style="color:#6b7280;">
+            If you didn't request a password reset, you can safely ignore this email.
+            Your password will remain unchanged.
+          </p>
+    
+          <hr style="margin:30px 0; border:none; border-top:1px solid #e5e7eb;">
+    
+          <p style="font-size:13px; color:#9ca3af;">
+            Please do not reply to this email. This mailbox is not monitored.
+          </p>
+    
+          <p style="font-size:13px; color:#9ca3af;">
+            © ${new Date().getFullYear()} Aquora Bottle Co. All rights reserved.
+          </p>
+    
+        </div>
+      `,
     });
 
 
     return res.status(200).json({
       success: true,
       message:
-        "If an account exists with this email, a password reset link has been sent.",
+        "Reset password link has been sent to your registered email",
     });
   } catch (error) {
     return res.status(500).json({

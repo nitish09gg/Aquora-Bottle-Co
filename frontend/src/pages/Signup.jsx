@@ -22,6 +22,10 @@ function Signup() {
   });
 
   const [phone, setPhone] = useState("");
+  const [phoneStep, setPhoneStep] = useState("phone");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneOtpError, setPhoneOtpError] = useState("");
+  const [phoneIsSubmitting, setPhoneIsSubmitting] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const recaptchaVerifier = useRef(null);
   const [error, setError] = useState("");
@@ -81,6 +85,123 @@ function Signup() {
     } finally {
       setPageLoading(false);
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePhoneSignup = async () => {
+    if (phone.length !== 10) {
+      setPhoneOtpError("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      setPhoneOtpError("Please enter your full name.");
+      return;
+    }
+
+    if (!formData.password || formData.password.length < 8) {
+      setPhoneOtpError("Password must be at least 8 characters.");
+      return;
+    }
+
+    try {
+      setPhoneOtpError("");
+      setPhoneIsSubmitting(true);
+
+      setLoadingConfig({
+        title: "Sending verification code...",
+        message: "Sending an OTP to your phone.",
+      });
+
+      setPageLoading(true);
+
+      const response = await fetch(`${API_URL}/api/auth/phone-signup`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("Phone Signup Response:", {
+        status: response.status,
+        ok: response.ok,
+        data,
+      });
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Unable to send verification code.");
+      }
+
+      setPhoneStep("verify");
+      setPhoneOtp("");
+    } catch (error) {
+      console.error("Phone Signup Error:", error);
+      setPhoneOtpError(error.message);
+    } finally {
+      setPageLoading(false);
+      setPhoneIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyPhone = async (event) => {
+    event.preventDefault();
+
+    if (phoneOtp.length !== 6) {
+      setPhoneOtpError("Please enter the 6-digit verification code.");
+      return;
+    }
+
+    try {
+      setPhoneOtpError("");
+
+      setLoadingConfig({
+        title: "Verifying your phone...",
+        message: "Checking your verification code.",
+      });
+
+      setPageLoading(true);
+
+      const response = await fetch(`${API_URL}/api/auth/verify-phone`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone,
+          otp: phoneOtp,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("Verify Phone Response:", {
+        status: response.status,
+        ok: response.ok,
+        data,
+      });
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Phone verification failed.");
+      }
+
+      setUser(data.user);
+
+      navigate("/browse", {
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Verify Phone Error:", error);
+      setPhoneOtpError(error.message);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -318,20 +439,62 @@ function Signup() {
   return (
     <AuthLayout
       mode="signup"
-      eyebrow={step === "signup" ? "CREATE YOUR MOCKUP" : "VERIFY YOUR EMAIL"}
+      eyebrow={
+        signupMethod === "phone"
+          ? phoneStep === "phone"
+            ? "CREATE YOUR MOCKUP"
+            : "VERIFY YOUR PHONE"
+          : step === "signup"
+          ? "CREATE YOUR MOCKUP"
+          : "VERIFY YOUR EMAIL"
+      }
       title={
-        step === "signup"
+        signupMethod === "phone" && phoneStep === "verify"
+          ? "Verify your phone number."
+          : step === "signup"
           ? "Let's make water part of your brand."
           : "One last step to get started."
       }
       description={
-        step === "signup"
+        signupMethod === "phone" && phoneStep === "verify"
+          ? `We've sent a 6-digit verification code to +91 ${phone}.`
+          : step === "signup"
           ? "Create your account to begin your custom bottle journey."
           : `We've sent a 6-digit verification code to ${formData.email}.`
       }
       footer={
         <>
-          {step === "signup" ? (
+          {signupMethod === "email" ? (
+            step === "signup" ? (
+              <>
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="font-semibold text-sky-600 hover:text-sky-700"
+                >
+                  Sign in
+                </Link>
+              </>
+            ) : (
+              <>
+                Didn't receive the code?{" "}
+                {resendCooldown > 0 ? (
+                  <span className="font-semibold text-slate-400">
+                    Resend in {resendCooldown}s
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={isResending}
+                    className="font-semibold text-sky-600 transition hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isResending ? "Sending..." : "Resend code"}
+                  </button>
+                )}
+              </>
+            )
+          ) : phoneStep === "phone" ? (
             <>
               Already have an account?{" "}
               <Link
@@ -344,25 +507,57 @@ function Signup() {
           ) : (
             <>
               Didn't receive the code?{" "}
-              {resendCooldown > 0 ? (
-                <span className="font-semibold text-slate-400">
-                  Resend in {resendCooldown}s
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  disabled={isResending}
-                  className="font-semibold text-sky-600 transition hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isResending ? "Sending..." : "Resend code"}
-                </button>
-              )}
+              {/* Phone resend will be added here */}
+              <button
+                type="button"
+                className="font-semibold text-sky-600 transition hover:text-sky-700"
+              >
+                Resend code
+              </button>
             </>
           )}
         </>
       }
     >
+      {/* ========================================================= */}
+      {/* EMAIL / PHONE TOGGLE */}
+      {/* ========================================================= */}
+
+      {step === "signup" && (
+        <div className="mb-6 flex rounded-xl bg-sky-50 p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setSignupMethod("email");
+              setError("");
+              setPhoneOtpError("");
+            }}
+            className={`flex-1 rounded-lg py-3 text-sm font-semibold transition ${
+              signupMethod === "email"
+                ? "bg-white text-sky-600 shadow"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Continue with Email
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSignupMethod("phone");
+              setError("");
+              setPhoneOtpError("");
+            }}
+            className={`flex-1 rounded-lg py-3 text-sm font-semibold transition ${
+              signupMethod === "phone"
+                ? "bg-white text-sky-600 shadow"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Continue with Phone
+          </button>
+        </div>
+      )}
       {/* ========================================================= */}
       {/* EMAIL SIGNUP */}
       {/* ========================================================= */}
@@ -471,7 +666,7 @@ function Signup() {
                 alt="Google"
                 className="h-5 w-5"
               />
-              Continue with Google
+              Sign up with Google
             </button>
           </form>
         </>
@@ -541,8 +736,30 @@ function Signup() {
       {/* PHONE SIGNUP */}
       {/* ========================================================= */}
 
-      {signupMethod === "phone" && (
+      {signupMethod === "phone" && phoneStep === "phone" && (
         <div className="space-y-5">
+          {/* Full Name */}
+          <div>
+            <label
+              htmlFor="phone-name"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Full name
+            </label>
+
+            <input
+              id="phone-name"
+              name="name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Your full name"
+              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+            />
+          </div>
+
+          {/* Phone */}
           <div>
             <label
               htmlFor="phone"
@@ -561,23 +778,100 @@ function Signup() {
                 type="tel"
                 maxLength={10}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => {
+                  setPhone(e.target.value.replace(/\D/g, ""));
+                  setPhoneOtpError("");
+                }}
                 placeholder="9876543210"
                 className="w-full bg-transparent px-4 py-3 outline-none"
               />
             </div>
           </div>
 
+          {/* Error */}
+          {phoneOtpError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {phoneOtpError}
+            </div>
+          )}
+
+          {/* Send OTP */}
           <button
             type="button"
-            onClick={sendOTP}
-            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700"
+            onClick={handlePhoneSignup}
+            disabled={phoneIsSubmitting}
+            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Send OTP
+            {phoneIsSubmitting ? "Sending..." : "Send Verification Code"}
+          </button>
+        </div>
+      )}
+      {signupMethod === "phone" && phoneStep === "verify" && (
+        <form onSubmit={handleVerifyPhone} className="space-y-6">
+          {phoneOtpError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {phoneOtpError}
+            </div>
+          )}
+
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-slate-900">
+              Verify your phone
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              We've sent a 6-digit verification code to
+            </p>
+
+            <p className="mt-1 font-semibold text-sky-600">+91 {phone}</p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="phone-otp"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Verification Code
+            </label>
+
+            <input
+              id="phone-otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={phoneOtp}
+              onChange={(event) => {
+                const value = event.target.value.replace(/\D/g, "").slice(0, 6);
+
+                setPhoneOtp(value);
+                setPhoneOtpError("");
+              }}
+              placeholder="Enter 6-digit code"
+              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={phoneOtp.length !== 6}
+            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Verify Phone
           </button>
 
-          <div id="recaptcha-container" />
-        </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPhoneStep("phone");
+              setPhoneOtp("");
+              setPhoneOtpError("");
+            }}
+            className="w-full text-sm font-semibold text-sky-600 hover:text-sky-700"
+          >
+            ← Change phone number
+          </button>
+        </form>
       )}
     </AuthLayout>
   );

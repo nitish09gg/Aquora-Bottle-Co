@@ -2,32 +2,33 @@ const axios = require("axios");
 
 const sendSMS = async ({ phone, otp }) => {
   try {
+    const apiKey = process.env.TWOFACTOR_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("TWOFACTOR_API_KEY is not configured.");
+    }
+
     const response = await axios.post(
-      "https://api.brevo.com/v3/transactionalSMS/send",
+      "https://2factor.in/API/V1/OTP/SEND",
       {
-        sender: "AQUORA",
-        recipient: phone,
-        content: `Your Aquora verification code is ${otp}. It expires in 15 minutes.`,
-        type: "transactional",
-        tag: "phoneVerification",
+        to: phone,
+        template_name: "AQUORA_OTP",
+        var1: otp,
       },
       {
         headers: {
-          "api-key": process.env.BREVO_API_KEY,
+          "X-API-Key": apiKey,
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
       }
     );
 
-    console.log("SMS sent successfully:", {
-        phone,
-        response: response.data,
-      });
+    console.log("2Factor SMS Response:", response.data);
+
     return response.data;
   } catch (error) {
     console.error(
-      "Brevo SMS Error:",
+      "2Factor SMS Error:",
       error.response?.data || error.message
     );
 

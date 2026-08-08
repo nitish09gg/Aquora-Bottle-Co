@@ -8,20 +8,12 @@ const sendSMS = async ({ phone, otp }) => {
       throw new Error("TWOFACTOR_API_KEY is not configured.");
     }
 
-    const response = await axios.post(
-      "https://2factor.in/API/V1/OTP/SEND",
-      {
-        to: phone,
-        template_name: "AQUORA_OTP",
-        var1: otp,
-      },
-      {
-        headers: {
-          "X-API-Key": apiKey,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    // +918335024412 → 918335024412
+    const phoneNumber = phone.replace("+", "");
+
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${phoneNumber}/${otp}`;
+
+    const response = await axios.post(url);
 
     console.log("2Factor SMS Response:", response.data);
 

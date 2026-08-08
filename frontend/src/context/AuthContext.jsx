@@ -10,8 +10,8 @@ export function AuthProvider({ children }) {
   const [pageLoading, setPageLoading] = useState(false);
 
   const [loadingConfig, setLoadingConfig] = useState({
-    title: "Welcome to Aquora",
-    message: "Preparing your collection...",
+    title: null,
+    message: "Please wait for a moment...",
   });
 
   useEffect(() => {

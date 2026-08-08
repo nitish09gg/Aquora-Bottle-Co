@@ -2,6 +2,7 @@ const router = require("express").Router();
 
 const {
   Signup,
+  VerifyEmail,
   Login,
   GoogleLogin,
   ForgotPassword,
@@ -14,6 +15,7 @@ const {
 } = require("../middlewares/AuthMiddleware");
 
 router.post("/signup", Signup);
+router.post("/verify-email", VerifyEmail);
 router.post("/login", Login);
 router.post("/google", GoogleLogin);
 router.post("/forgot-password", ForgotPassword);

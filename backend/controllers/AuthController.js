@@ -3,7 +3,10 @@ const createSecretToken = require("../utils/SecretToken");
 const validateEmail = require("../utils/ValidateEmail.js");
 const isProduction = process.env.NODE_ENV === "production";
 const sendEmail = require("../utils/sendEmail");
+const EmailVerificationModel = require("../models/EmailVerificationModel");
+
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 
 const cookieOptions = {
   httpOnly: true,
@@ -21,6 +24,8 @@ const publicUser = (user) => ({
   createdAt: user.createdAt,
 });
 
+
+
 const Signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -32,7 +37,10 @@ const Signup = async (req, res) => {
       });
     }
 
-    const emailData = await validateEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Validate email
+    const emailData = await validateEmail(normalizedEmail);
 
     if (!emailData) {
       return res.status(503).json({
@@ -58,7 +66,10 @@ const Signup = async (req, res) => {
       });
     }
 
-    const existingUser = await UserModel.findOne({ email });
+    // Check if account already exists
+    const existingUser = await UserModel.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
       return res.status(409).json({
@@ -67,24 +78,119 @@ const Signup = async (req, res) => {
       });
     }
 
-    const user = await UserModel.create({ name, email, password });
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 1000000).toString();
 
-    const token = createSecretToken(user._id.toString());
+    // Hash password before temporary storage
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    return res
-      .status(201)
-      .cookie("token", token, cookieOptions)
-      .json({
-        success: true,
-        message: "Account created successfully.",
-        user: publicUser(user),
-      });
+    // Hash OTP
+    const otpHash = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    // OTP expires in 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Remove any previous pending verification
+    await EmailVerificationModel.deleteMany({
+      email: normalizedEmail,
+    });
+
+    // Store temporary signup information
+    await EmailVerificationModel.create({
+      email: normalizedEmail,
+      name,
+      password: hashedPassword,
+      otpHash,
+      otpExpires,
+      attempts: 0,
+    });
+
+    // Send OTP email
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "Verify Your Aquora Account",
+      html: `
+        <div style="
+          font-family: Arial, sans-serif;
+          max-width: 600px;
+          margin: auto;
+          padding: 20px;
+        ">
+
+          <h2 style="color: #2563eb;">
+            Aquora Bottle Co.
+          </h2>
+
+          <h3 style="color: #111827;">
+            Verify your email
+          </h3>
+
+          <p style="color: #4b5563;">
+            Hey, ${name}
+          </p>
+
+          <p style="color: #4b5563;">
+            Thanks for creating an Aquora account.
+            Please use the verification code below to continue.
+          </p>
+
+          <div style="
+            margin: 30px 0;
+            padding: 18px;
+            background: #eff6ff;
+            border-radius: 10px;
+            text-align: center;
+          ">
+            <span style="
+              font-size: 32px;
+              font-weight: bold;
+              letter-spacing: 8px;
+              color: #2563eb;
+            ">
+              ${otp}
+            </span>
+          </div>
+
+          <p style="color:#6b7280;">
+            This code will expire in <strong>10 minutes</strong>.
+          </p>
+
+          <p style="color:#6b7280;">
+            If you didn't create an Aquora account, you can safely ignore
+            this email.
+          </p>
+
+          <hr style="
+            margin:30px 0;
+            border:none;
+            border-top:1px solid #e5e7eb;
+          ">
+
+          <p style="font-size:13px; color:#9ca3af;">
+            Please do not reply to this email.
+          </p>
+
+          <p style="font-size:13px; color:#9ca3af;">
+            © ${new Date().getFullYear()} Aquora Bottle Co.
+          </p>
+
+        </div>
+      `,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification code sent to your email.",
+    });
   } catch (error) {
-    console.error("Signup error:", error.message);
+    console.error("Signup error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to create your account.",
+      message: "Unable to send verification code.",
     });
   }
 };
@@ -364,6 +470,128 @@ const getCurrentUser = async (req, res) => {
   });
 };
 
+
+const VerifyEmail = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and OTP are required.",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const verification = await EmailVerificationModel.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!verification) {
+      return res.status(400).json({
+        success: false,
+        message: "Verification request not found or has expired.",
+      });
+    }
+
+    // Check OTP expiry
+    if (verification.otpExpires < new Date()) {
+      await EmailVerificationModel.deleteOne({
+        _id: verification._id,
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Limit incorrect attempts
+    if (verification.attempts >= 5) {
+      await EmailVerificationModel.deleteOne({
+        _id: verification._id,
+      });
+
+      return res.status(429).json({
+        success: false,
+        message: "Too many incorrect attempts. Please request a new OTP.",
+      });
+    }
+
+    // Hash submitted OTP
+    const otpHash = crypto
+      .createHash("sha256")
+      .update(otp.toString())
+      .digest("hex");
+
+    // Compare OTP
+    if (otpHash !== verification.otpHash) {
+      verification.attempts += 1;
+      await verification.save();
+
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect verification code.",
+      });
+    }
+
+    // Make sure the email wasn't registered while verification was pending
+    const existingUser = await UserModel.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      await EmailVerificationModel.deleteOne({
+        _id: verification._id,
+      });
+
+      return res.status(409).json({
+        success: false,
+        message: "An account already exists with this email.",
+      });
+    }
+
+    // Create the actual user.
+    // IMPORTANT:
+    // verification.password is ALREADY hashed.
+    const user = new UserModel({
+      name: verification.name,
+      email: verification.email,
+      password: verification.password,
+    });
+
+    // Prevent the UserModel pre-save hook from hashing the password again
+    user.$locals.passwordAlreadyHashed = true;
+
+    await user.save();
+
+    // Remove temporary verification data
+    await EmailVerificationModel.deleteOne({
+      _id: verification._id,
+    });
+
+    // Create authentication token
+    const token = createSecretToken(user._id.toString());
+
+    return res
+      .status(201)
+      .cookie("token", token, cookieOptions)
+      .json({
+        success: true,
+        message: "Email verified and account created successfully.",
+        user: publicUser(user),
+      });
+  } catch (error) {
+    console.error("Verify Email error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to verify your email.",
+    });
+  }
+};
+
 module.exports = {
   Signup,
   Login,
@@ -372,4 +600,5 @@ module.exports = {
   ResetPassword,
   Logout,
   getCurrentUser,
+  VerifyEmail,
 };

@@ -201,7 +201,7 @@ const PhoneSignup = async (req, res) => {
     if (!name || !phone ) {
       return res.status(400).json({
         success: false,
-        message: "Name, phone number, and password are required.",
+        message: "Name and phone number are required.",
       });
     }
 

@@ -1,8 +1,17 @@
 const axios = require("axios");
 
 const sendSMS = async ({ phone, otp }) => {
+  console.log("========== sendSMS CALLED ==========");
+  console.log("Phone:", phone);
+  console.log("OTP:", otp);
+
   try {
     const apiKey = process.env.TWOFACTOR_API_KEY;
+
+    console.log(
+      "2Factor API key exists:",
+      Boolean(apiKey)
+    );
 
     if (!apiKey) {
       throw new Error("TWOFACTOR_API_KEY is not configured.");
@@ -11,6 +20,11 @@ const sendSMS = async ({ phone, otp }) => {
     const phoneNumber = phone.replace("+", "");
 
     const message = `${otp} is your Aquora verification code. It expires in 15 minutes.`;
+
+    console.log("Sending transactional SMS...");
+    console.log("Phone:", phoneNumber);
+    console.log("Sender: AQUORA");
+    console.log("Message:", message);
 
     const params = new URLSearchParams();
 
@@ -30,18 +44,14 @@ const sendSMS = async ({ phone, otp }) => {
       }
     );
 
-    console.log("2Factor Transactional SMS Response:", response.data);
-
-    if (response.data?.Status !== "Success") {
-      throw new Error(
-        response.data?.Details || "2Factor SMS request failed."
-      );
-    }
+    console.log("========== 2FACTOR RESPONSE ==========");
+    console.log(response.data);
 
     return response.data;
   } catch (error) {
+    console.error("========== 2FACTOR ERROR ==========");
+
     console.error(
-      "2Factor Transactional SMS Error:",
       error.response?.data || error.message
     );
 

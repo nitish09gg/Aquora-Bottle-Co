@@ -89,6 +89,8 @@ function Signup() {
   };
 
   const handlePhoneSignup = async () => {
+    console.log("API_URL:", API_URL);
+    console.log("Phone Signup URL:", `${API_URL}/api/auth/phone-signup`);
     if (phone.length !== 10) {
       setPhoneOtpError("Please enter a valid 10-digit phone number.");
       return;
@@ -501,8 +503,7 @@ function Signup() {
             </>
           ) : (
             <>
-              Didn't receive the code?{" "}
-              {/* Phone resend will be added here */}
+              Didn't receive the code? {/* Phone resend will be added here */}
               <button
                 type="button"
                 className="font-semibold text-sky-600 transition hover:text-sky-700"

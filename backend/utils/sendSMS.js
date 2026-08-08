@@ -20,7 +20,10 @@ const sendSMS = async ({ phone, otp }) => {
       }
     );
 
-    console.log("SMS sent successfully:", response.data);
+    console.log("SMS sent successfully:", {
+        phone,
+        response: response.data,
+      });
     return response.data;
   } catch (error) {
     console.error(

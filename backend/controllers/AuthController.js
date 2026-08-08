@@ -195,6 +195,8 @@ const Signup = async (req, res) => {
 };
 
 const PhoneSignup = async (req, res) => {
+  console.log("🔥 PHONE SIGNUP HIT");
+  console.log("BODY:", req.body);
   try {
     const { name, phone } = req.body;
 

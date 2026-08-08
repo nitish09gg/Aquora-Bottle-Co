@@ -10,44 +10,17 @@ const sendSMS = async ({ phone, otp }) => {
 
     const phoneNumber = phone.replace("+", "");
 
-    const message = `${otp} is your Aquora verification code. It expires in 15 minutes.`;
+    const url =
+      `https://2factor.in/API/V1/${apiKey}/SMS/${phoneNumber}/${otp}/AQUORA_OTP`;
 
-    const params = new URLSearchParams();
+    const response = await axios.get(url);
 
-    params.append("module", "TRANS_SMS");
-    params.append("apikey", apiKey);
-    params.append("to", phoneNumber);
-    params.append("from", "AQUORA");
-    params.append("templatename", "AQUORA_OTP");
-    params.append("msg", message);
-
-    console.log("Sending 2Factor Transactional SMS...");
-
-    const response = await axios.post(
-      "https://2factor.in/API/R1/",
-      params.toString(),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    console.log(
-      "2Factor Transactional SMS Response:",
-      response.data
-    );
-
-    if (response.data?.Status !== "Success") {
-      throw new Error(
-        response.data?.Details || "2Factor SMS request failed."
-      );
-    }
+    console.log("2Factor OTP Response:", response.data);
 
     return response.data;
   } catch (error) {
     console.error(
-      "2Factor Transactional SMS Error:",
+      "2Factor OTP Error:",
       error.response?.data || error.message
     );
 

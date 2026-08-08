@@ -8,10 +8,10 @@ const sendSMS = async ({ phone, otp }) => {
       throw new Error("TWOFACTOR_API_KEY is not configured.");
     }
 
-    // +918335024412 → 918335024412
+    // Remove + from +91XXXXXXXXXX
     const phoneNumber = phone.replace("+", "");
 
-    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${phoneNumber}/${otp}`;
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${phoneNumber}/${otp}/AQUORA_OTP`;
 
     const response = await axios.post(url);
 

@@ -510,6 +510,244 @@ const Login = async (req, res) => {
   }
 };
 
+const PhoneLogin = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required.",
+      });
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid 10-digit phone number.",
+      });
+    }
+
+    const normalizedPhone = `+91${phone}`;
+
+    // Check whether account exists
+    const user = await UserModel.findOne({
+      phone: normalizedPhone,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No account exists with this phone number.",
+      });
+    }
+
+    // Find existing OTP verification record
+    let verification = await PhoneVerificationModel.findOne({
+      phone: normalizedPhone,
+    });
+
+    // Prevent repeated OTP requests within 60 seconds
+    if (verification?.lastOtpSentAt) {
+      const secondsSinceLastOtp =
+        (Date.now() - verification.lastOtpSentAt.getTime()) / 1000;
+
+      if (secondsSinceLastOtp < 60) {
+        const remainingSeconds = Math.ceil(
+          60 - secondsSinceLastOtp
+        );
+
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${remainingSeconds} seconds before requesting another code.`,
+          remainingSeconds,
+        });
+      }
+    }
+
+    // Generate OTP
+    const otp = crypto
+      .randomInt(100000, 1000000)
+      .toString();
+
+    // Hash OTP
+    const otpHash = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    const otpExpires = new Date(
+      Date.now() + 15 * 60 * 1000
+    );
+
+    // Send OTP
+    await sendSMS({
+      phone: normalizedPhone,
+      otp,
+    });
+
+    // Create/update verification
+    if (verification) {
+      verification.name = user.name;
+      verification.otpHash = otpHash;
+      verification.otpExpires = otpExpires;
+      verification.attempts = 0;
+      verification.lastOtpSentAt = new Date();
+      verification.resendCount += 1;
+
+      await verification.save();
+    } else {
+      verification = await PhoneVerificationModel.create({
+        phone: normalizedPhone,
+        name: user.name,
+        otpHash,
+        otpExpires,
+        attempts: 0,
+        lastOtpSentAt: new Date(),
+        resendCount: 0,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification code sent to your phone.",
+    });
+  } catch (error) {
+    console.error("Phone Login error:", error);
+    console.error("Phone Login stack:", error.stack);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to send verification code.",
+    });
+  }
+};
+
+const VerifyPhoneLogin = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number and OTP are required.",
+      });
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid phone number.",
+      });
+    }
+
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code.",
+      });
+    }
+
+    const normalizedPhone = `+91${phone}`;
+
+    const verification =
+      await PhoneVerificationModel.findOne({
+        phone: normalizedPhone,
+      });
+
+    if (!verification) {
+      return res.status(404).json({
+        success: false,
+        message: "Verification request not found or expired.",
+      });
+    }
+
+    // Check expiry
+    if (verification.otpExpires < new Date()) {
+      await PhoneVerificationModel.deleteOne({
+        _id: verification._id,
+      });
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "Verification code has expired. Please request a new one.",
+      });
+    }
+
+    // Limit attempts
+    if (verification.attempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Too many incorrect attempts. Please request a new verification code.",
+      });
+    }
+
+    // Hash entered OTP
+    const otpHash = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    if (otpHash !== verification.otpHash) {
+      verification.attempts += 1;
+      await verification.save();
+
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect verification code.",
+      });
+    }
+
+    // Find user
+    const user = await UserModel.findOne({
+      phone: normalizedPhone,
+    });
+
+    if (!user) {
+      await PhoneVerificationModel.deleteOne({
+        _id: verification._id,
+      });
+
+      return res.status(404).json({
+        success: false,
+        message: "Account not found.",
+      });
+    }
+
+    // Delete used OTP
+    await PhoneVerificationModel.deleteOne({
+      _id: verification._id,
+    });
+
+    // Create login token
+    const token = createSecretToken(
+      user._id.toString()
+    );
+
+    return res
+      .status(200)
+      .cookie("token", token, cookieOptions)
+      .json({
+        success: true,
+        message: "Phone login successful.",
+        user: publicUser(user),
+      });
+  } catch (error) {
+    console.error("Verify Phone Login error:", error);
+    console.error(
+      "Verify Phone Login stack:",
+      error.stack
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to verify your phone.",
+    });
+  }
+};
+
 const ForgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -970,4 +1208,6 @@ module.exports = {
   ResendEmailOTP,
   PhoneSignup,
   VerifyPhone,
+  PhoneLogin,
+  VerifyPhoneLogin,
 };

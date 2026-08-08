@@ -28,6 +28,10 @@ function Signup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupMethod, setSignupMethod] = useState("email");
 
+  const [step, setStep] = useState("signup");
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -39,16 +43,18 @@ function Signup() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
     setError("");
     setIsSubmitting(true);
-
+  
     try {
       setLoadingConfig({
         title: "Creating your account...",
-        message: "Setting up your Aquora account.",
+        message: "Sending a verification code to your email.",
       });
+  
       setPageLoading(true);
+  
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: "POST",
         credentials: "include",
@@ -57,21 +63,73 @@ function Signup() {
         },
         body: JSON.stringify(formData),
       });
-
+  
       const data = await response.json();
-
-if (!response.ok || !data.success) {
-  throw new Error(data.message || "Signup failed. Please try again.");
-}
-
-setUser(data.user);
-
-navigate("/browse", { replace: true });
+  
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Signup failed. Please try again."
+        );
+      }
+  
+      // Account is NOT created yet.
+      // OTP has been sent.
+      setStep("verify");
     } catch (error) {
       setError(error.message);
     } finally {
       setPageLoading(false);
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyEmail = async (event) => {
+    event.preventDefault();
+  
+    if (otp.length !== 6) {
+      setOtpError("Please enter the 6-digit verification code.");
+      return;
+    }
+  
+    try {
+      setOtpError("");
+  
+      setLoadingConfig({
+        title: "Verifying your email...",
+        message: "Checking your verification code.",
+      });
+  
+      setPageLoading(true);
+  
+      const response = await fetch(`${API_URL}/api/auth/verify-email`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          otp,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Email verification failed."
+        );
+      }
+  
+      setUser(data.user);
+  
+      navigate("/browse", {
+        replace: true,
+      });
+    } catch (error) {
+      setOtpError(error.message);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -178,60 +236,59 @@ navigate("/browse", { replace: true });
   };
 
   return (
-    <AuthLayout
-      mode="signup"
-      eyebrow="CREATE YOUR MOCKUP"
-      title="Let's make water part of your brand."
-      description="Create your account to begin your custom bottle journey."
-      footer={
-        <>
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-semibold text-sky-600 transition hover:text-sky-700"
-          >
-            Sign in
-          </Link>
-        </>
-      }
-    >
-      {/* Toggle */}
-      <div className="mb-8 flex rounded-xl border border-sky-100 bg-sky-50 p-1">
-        <button
-          type="button"
-          onClick={() => setSignupMethod("email")}
-          className={`flex-1 rounded-lg py-3 text-sm font-semibold transition ${
-            signupMethod === "email"
-              ? "bg-white text-sky-600 shadow"
-              : "text-slate-500"
-          }`}
-        >
-          Continue with Email
-        </button>
+  <AuthLayout
+    mode="signup"
+    eyebrow={step === "signup" ? "CREATE YOUR MOCKUP" : "VERIFY YOUR EMAIL"}
+    title={
+      step === "signup"
+        ? "Let's make water part of your brand."
+        : "One last step to get started."
+    }
+    description={
+      step === "signup"
+        ? "Create your account to begin your custom bottle journey."
+        : `We've sent a 6-digit verification code to ${formData.email}.`
+    }
+    footer={
+      <>
+        {step === "signup" ? (
+          <>
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-semibold text-sky-600 hover:text-sky-700"
+            >
+              Sign in
+            </Link>
+          </>
+        ) : (
+          <>
+            Didn't receive the code?{" "}
+            <button
+              type="button"
+              className="font-semibold text-sky-600 hover:text-sky-700"
+            >
+              Resend
+            </button>
+          </>
+        )}
+      </>
+    }
+  >
+    {/* ========================================================= */}
+    {/* EMAIL SIGNUP */}
+    {/* ========================================================= */}
 
-        <button
-          type="button"
-          onClick={() => setSignupMethod("phone")}
-          className={`flex-1 rounded-lg py-3 text-sm font-semibold transition ${
-            signupMethod === "phone"
-              ? "bg-white text-sky-600 shadow"
-              : "text-slate-500"
-          }`}
-        >
-          Continue with Phone
-        </button>
-      </div>
+    {signupMethod === "email" && step === "signup" && (
+      <>
+        {error && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
-      {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* ================= EMAIL SIGNUP ================= */}
-
-      {signupMethod === "email" && (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
           <div>
             <label
               htmlFor="name"
@@ -252,6 +309,7 @@ navigate("/browse", { replace: true });
             />
           </div>
 
+          {/* Email */}
           <div>
             <label
               htmlFor="email"
@@ -272,6 +330,7 @@ navigate("/browse", { replace: true });
             />
           </div>
 
+          {/* Password */}
           <div>
             <label
               htmlFor="password"
@@ -293,24 +352,29 @@ navigate("/browse", { replace: true });
             />
           </div>
 
+          {/* Create Account */}
           <button
             type="submit"
             disabled={isSubmitting}
             className="mt-2 w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Create Account
-            {/* {isSubmitting ? "Creating account..." : "Create Account"} */}
           </button>
+
+          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
+              <div className="w-full border-t border-slate-200" />
             </div>
 
             <div className="relative flex justify-center">
-              <span className="bg-white px-4 text-sm text-slate-500">OR</span>
+              <span className="bg-white px-4 text-sm text-slate-500">
+                OR
+              </span>
             </div>
           </div>
 
+          {/* Google */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
@@ -321,52 +385,125 @@ navigate("/browse", { replace: true });
               alt="Google"
               className="h-5 w-5"
             />
+
             Continue with Google
           </button>
         </form>
-      )}
+      </>
+    )}
 
-      {/* ================= PHONE SIGNUP ================= */}
+    {/* ========================================================= */}
+    {/* EMAIL OTP VERIFICATION */}
+    {/* ========================================================= */}
 
-      {signupMethod === "phone" && (
-        <div className="space-y-5">
-          <div>
-            <label
-              htmlFor="phone"
-              className="mb-2 block text-sm font-semibold text-slate-700"
-            >
-              Phone Number
-            </label>
-
-            <div className="flex overflow-hidden rounded-xl border border-sky-100 bg-sky-50/70 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-sky-100">
-              <span className="flex items-center border-r border-sky-100 px-4 font-semibold text-slate-700">
-                +91
-              </span>
-
-              <input
-                id="phone"
-                type="tel"
-                maxLength={10}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                placeholder="9876543210"
-                className="w-full bg-transparent px-4 py-3 outline-none"
-              />
-            </div>
+    {signupMethod === "email" && step === "verify" && (
+      <form onSubmit={handleVerifyEmail} className="space-y-6">
+        {/* Error */}
+        {otpError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {otpError}
           </div>
+        )}
 
-          <button
-            type="button"
-            onClick={sendOTP}
-            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700"
+        {/* OTP */}
+        <div>
+          <label
+            htmlFor="otp"
+            className="mb-2 block text-sm font-semibold text-slate-700"
           >
-            Send OTP
-          </button>
-          <div id="recaptcha-container"></div>
+            Verification Code
+          </label>
+
+          <input
+            id="otp"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={otp}
+            onChange={(event) => {
+              const value = event.target.value
+                .replace(/\D/g, "")
+                .slice(0, 6);
+
+              setOtp(value);
+              setOtpError("");
+            }}
+            placeholder="Enter 6-digit code"
+            className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+          />
         </div>
-      )}
-    </AuthLayout>
-  );
+
+        {/* Verify */}
+        <button
+          type="submit"
+          disabled={otp.length !== 6}
+          className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Verify Email
+        </button>
+
+        {/* Back */}
+        <button
+          type="button"
+          onClick={() => {
+            setStep("signup");
+            setOtp("");
+            setOtpError("");
+          }}
+          className="w-full text-sm font-semibold text-sky-600 transition hover:text-sky-700"
+        >
+          ← Back to signup
+        </button>
+      </form>
+    )}
+
+    {/* ========================================================= */}
+    {/* PHONE SIGNUP */}
+    {/* ========================================================= */}
+
+    {signupMethod === "phone" && (
+      <div className="space-y-5">
+        <div>
+          <label
+            htmlFor="phone"
+            className="mb-2 block text-sm font-semibold text-slate-700"
+          >
+            Phone Number
+          </label>
+
+          <div className="flex overflow-hidden rounded-xl border border-sky-100 bg-sky-50/70 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-sky-100">
+            <span className="flex items-center border-r border-sky-100 px-4 font-semibold text-slate-700">
+              +91
+            </span>
+
+            <input
+              id="phone"
+              type="tel"
+              maxLength={10}
+              value={phone}
+              onChange={(e) =>
+                setPhone(e.target.value.replace(/\D/g, ""))
+              }
+              placeholder="9876543210"
+              className="w-full bg-transparent px-4 py-3 outline-none"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={sendOTP}
+          className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700"
+        >
+          Send OTP
+        </button>
+
+        <div id="recaptcha-container" />
+      </div>
+    )}
+  </AuthLayout>
+);
 }
 
 export default Signup;

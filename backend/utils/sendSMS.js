@@ -10,7 +10,6 @@ const sendSMS = async ({ phone, otp }) => {
 
     const phoneNumber = phone.replace("+", "");
 
-    // Must match your approved DLT message
     const message = `${otp} is your Aquora verification code. It expires in 15 minutes.`;
 
     const params = new URLSearchParams();
@@ -19,6 +18,7 @@ const sendSMS = async ({ phone, otp }) => {
     params.append("apikey", apiKey);
     params.append("to", phoneNumber);
     params.append("from", "AQUORA");
+    params.append("templatename", "AQUORA_OTP");
     params.append("msg", message);
 
     console.log("Sending 2Factor Transactional SMS...");
@@ -33,7 +33,10 @@ const sendSMS = async ({ phone, otp }) => {
       }
     );
 
-    console.log("2Factor Transactional SMS Response:", response.data);
+    console.log(
+      "2Factor Transactional SMS Response:",
+      response.data
+    );
 
     if (response.data?.Status !== "Success") {
       throw new Error(

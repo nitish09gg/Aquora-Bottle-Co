@@ -196,9 +196,9 @@ const Signup = async (req, res) => {
 
 const PhoneSignup = async (req, res) => {
   try {
-    const { name, phone, password } = req.body;
+    const { name, phone } = req.body;
 
-    if (!name || !phone || !password) {
+    if (!name || !phone ) {
       return res.status(400).json({
         success: false,
         message: "Name, phone number, and password are required.",
@@ -212,12 +212,6 @@ const PhoneSignup = async (req, res) => {
       });
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters.",
-      });
-    }
 
     // Normalize Indian phone number
     const normalizedPhone = `+91${phone}`;
@@ -261,9 +255,6 @@ const PhoneSignup = async (req, res) => {
     // Hash OTP before storing
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
 
-    // Hash password before temporary storage
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
 
     // Send SMS first
@@ -275,7 +266,6 @@ const PhoneSignup = async (req, res) => {
     // Create/update temporary verification
     if (verification) {
       verification.name = name;
-      verification.password = hashedPassword;
       verification.otpHash = otpHash;
       verification.otpExpires = otpExpires;
       verification.attempts = 0;
@@ -287,7 +277,6 @@ const PhoneSignup = async (req, res) => {
       verification = await PhoneVerificationModel.create({
         phone: normalizedPhone,
         name,
-        password: hashedPassword,
         otpHash,
         otpExpires,
         attempts: 0,

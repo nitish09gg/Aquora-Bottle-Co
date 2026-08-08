@@ -584,10 +584,11 @@ const VerifyEmail = async (req, res) => {
       });
   } catch (error) {
     console.error("Verify Email error:", error);
-
+    console.error("Verify Email stack:", error.stack);
+  
     return res.status(500).json({
       success: false,
-      message: "Unable to verify your email.",
+      message: error.message || "Unable to verify your email.",
     });
   }
 };

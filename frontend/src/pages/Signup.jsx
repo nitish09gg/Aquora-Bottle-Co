@@ -99,11 +99,6 @@ function Signup() {
       return;
     }
 
-    if (!formData.password || formData.password.length < 8) {
-      setPhoneOtpError("Password must be at least 8 characters.");
-      return;
-    }
-
     try {
       setPhoneOtpError("");
       setPhoneIsSubmitting(true);

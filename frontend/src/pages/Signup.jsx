@@ -143,52 +143,46 @@ function Signup() {
     if (resendCooldown > 0 || isResending) {
       return;
     }
-  
+
     try {
       setOtpError("");
       setIsResending(true);
-  
+
       setLoadingConfig({
         title: "Sending a new code...",
         message: "Please wait while we send another verification code.",
       });
-  
+
       setPageLoading(true);
-  
-      const response = await fetch(
-        `${API_URL}/api/auth/resend-email-otp`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-          }),
-        }
-      );
-  
+
+      const response = await fetch(`${API_URL}/api/auth/resend-email-otp`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+        }),
+      });
+
       const data = await response.json();
-  
+
       console.log("Resend OTP Response:", {
         status: response.status,
         ok: response.ok,
         data,
       });
-  
+
       if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "Unable to resend verification code."
-        );
+        throw new Error(data.message || "Unable to resend verification code.");
       }
-  
+
       // Start the 60-second cooldown
       setResendCooldown(60);
-  
+
       // Clear the old OTP
       setOtp("");
-  
     } catch (error) {
       console.error("Resend OTP Error:", error);
       setOtpError(error.message);
@@ -196,6 +190,18 @@ function Signup() {
       setPageLoading(false);
       setIsResending(false);
     }
+  };
+  const handleChangeEmail = () => {
+    setStep("signup");
+
+    setOtp("");
+    setOtpError("");
+    setError("");
+
+    // Optional: allow the user to immediately edit the email
+    setTimeout(() => {
+      document.getElementById("email")?.focus();
+    }, 0);
   };
 
   const sendOTP = async () => {
@@ -301,11 +307,11 @@ function Signup() {
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-  
+
     const timer = setInterval(() => {
       setResendCooldown((current) => current - 1);
     }, 1000);
-  
+
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
@@ -338,7 +344,6 @@ function Signup() {
           ) : (
             <>
               Didn't receive the code?{" "}
-      
               {resendCooldown > 0 ? (
                 <span className="font-semibold text-slate-400">
                   Resend in {resendCooldown}s
@@ -524,14 +529,10 @@ function Signup() {
           {/* Back */}
           <button
             type="button"
-            onClick={() => {
-              setStep("signup");
-              setOtp("");
-              setOtpError("");
-            }}
+            onClick={handleChangeEmail}
             className="w-full text-sm font-semibold text-sky-600 transition hover:text-sky-700"
           >
-            ← Back to signup
+            ← Change email
           </button>
         </form>
       )}

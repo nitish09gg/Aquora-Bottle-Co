@@ -3,6 +3,7 @@ const router = require("express").Router();
 const {
   Signup,
   VerifyEmail,
+  ResendEmailOTP,
   Login,
   GoogleLogin,
   ForgotPassword,
@@ -16,6 +17,7 @@ const {
 
 router.post("/signup", Signup);
 router.post("/verify-email", VerifyEmail);
+router.post("/resend-email-otp", ResendEmailOTP);
 router.post("/login", Login);
 router.post("/google", GoogleLogin);
 router.post("/forgot-password", ForgotPassword);

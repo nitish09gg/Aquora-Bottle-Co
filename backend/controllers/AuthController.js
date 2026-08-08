@@ -106,6 +106,8 @@ const Signup = async (req, res) => {
       otpHash,
       otpExpires,
       attempts: 0,
+      lastOtpSentAt: new Date(),
+      resendCount: 0,
     });
 
     // Send OTP email
@@ -593,6 +595,145 @@ const VerifyEmail = async (req, res) => {
   }
 };
 
+const ResendEmailOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required.",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const verification = await EmailVerificationModel.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!verification) {
+      return res.status(404).json({
+        success: false,
+        message: "No pending email verification found.",
+      });
+    }
+
+    // 60-second cooldown
+    if (verification.lastOtpSentAt) {
+      const secondsSinceLastOtp =
+        (Date.now() - verification.lastOtpSentAt.getTime()) / 1000;
+
+      if (secondsSinceLastOtp < 60) {
+        const remainingSeconds = Math.ceil(
+          60 - secondsSinceLastOtp
+        );
+
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${remainingSeconds} seconds before requesting another code.`,
+          remainingSeconds,
+        });
+      }
+    }
+
+    // Generate a new 6-digit OTP
+    const otp = crypto.randomInt(100000, 1000000).toString();
+
+    // Hash OTP before storing
+    const otpHash = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Send the new OTP
+    await sendEmail({
+      to: verification.email,
+      subject: "Your Aquora Verification Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+          
+          <h2 style="color: #2563eb;">
+            Aquora Bottle Co.
+          </h2>
+
+          <h3 style="color: #111827;">
+            Your New Verification Code
+          </h3>
+
+          <p style="color: #4b5563;">
+            Hey, ${verification.name}
+          </p>
+
+          <p style="color: #4b5563;">
+            You requested a new verification code for your Aquora account.
+          </p>
+
+          <div style="
+            margin: 30px 0;
+            padding: 20px;
+            background: #eff6ff;
+            border-radius: 12px;
+            text-align: center;
+          ">
+            <span style="
+              font-size: 32px;
+              font-weight: bold;
+              letter-spacing: 8px;
+              color: #2563eb;
+            ">
+              ${otp}
+            </span>
+          </div>
+
+          <p style="color: #6b7280;">
+            This code will expire in <strong>15 minutes</strong>.
+          </p>
+
+          <p style="color: #6b7280;">
+            If you didn't request this code, you can safely ignore this email.
+          </p>
+
+          <hr style="
+            margin: 30px 0;
+            border: none;
+            border-top: 1px solid #e5e7eb;
+          ">
+
+          <p style="font-size: 13px; color: #9ca3af;">
+            © ${new Date().getFullYear()} Aquora Bottle Co. All rights reserved.
+          </p>
+
+        </div>
+      `,
+    });
+
+    // Update OTP only after email was successfully sent
+    verification.otpHash = otpHash;
+    verification.otpExpires = otpExpires;
+    verification.attempts = 0;
+    verification.lastOtpSentAt = new Date();
+    verification.resendCount += 1;
+
+    await verification.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "A new verification code has been sent to your email.",
+    });
+  } catch (error) {
+    console.error("Resend Email OTP error:", error);
+    console.error("Resend Email OTP stack:", error.stack);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to resend verification code.",
+    });
+  }
+};
+
 module.exports = {
   Signup,
   Login,
@@ -602,4 +743,5 @@ module.exports = {
   Logout,
   getCurrentUser,
   VerifyEmail,
+  ResendEmailOTP,
 };

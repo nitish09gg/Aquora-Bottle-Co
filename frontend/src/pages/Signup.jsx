@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   RecaptchaVerifier,
@@ -32,6 +32,9 @@ function Signup() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
 
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -43,18 +46,18 @@ function Signup() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-  
+
     setError("");
     setIsSubmitting(true);
-  
+
     try {
       setLoadingConfig({
         title: "Creating your account...",
         message: "Sending a verification code to your email.",
       });
-  
+
       setPageLoading(true);
-  
+
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: "POST",
         credentials: "include",
@@ -63,15 +66,13 @@ function Signup() {
         },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "Signup failed. Please try again."
-        );
+        throw new Error(data.message || "Signup failed. Please try again.");
       }
-  
+
       // Account is NOT created yet.
       // OTP has been sent.
       setStep("verify");
@@ -85,22 +86,22 @@ function Signup() {
 
   const handleVerifyEmail = async (event) => {
     event.preventDefault();
-  
+
     if (otp.length !== 6) {
       setOtpError("Please enter the 6-digit verification code.");
       return;
     }
-  
+
     try {
       setOtpError("");
-  
+
       setLoadingConfig({
         title: "Verifying your email...",
         message: "Checking your verification code.",
       });
-  
+
       setPageLoading(true);
-  
+
       const response = await fetch(`${API_URL}/api/auth/verify-email`, {
         method: "POST",
         credentials: "include",
@@ -112,23 +113,21 @@ function Signup() {
           otp,
         }),
       });
-  
+
       const data = await response.json();
-  
+
       console.log("Verify Email Response:", {
         status: response.status,
         ok: response.ok,
         data,
       });
-  
+
       if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "Email verification failed."
-        );
+        throw new Error(data.message || "Email verification failed.");
       }
-  
+
       setUser(data.user);
-  
+
       navigate("/browse", {
         replace: true,
       });
@@ -140,9 +139,67 @@ function Signup() {
     }
   };
 
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0 || isResending) {
+      return;
+    }
+  
+    try {
+      setOtpError("");
+      setIsResending(true);
+  
+      setLoadingConfig({
+        title: "Sending a new code...",
+        message: "Please wait while we send another verification code.",
+      });
+  
+      setPageLoading(true);
+  
+      const response = await fetch(
+        `${API_URL}/api/auth/resend-email-otp`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+          }),
+        }
+      );
+  
+      const data = await response.json();
+  
+      console.log("Resend OTP Response:", {
+        status: response.status,
+        ok: response.ok,
+        data,
+      });
+  
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to resend verification code."
+        );
+      }
+  
+      // Start the 60-second cooldown
+      setResendCooldown(60);
+  
+      // Clear the old OTP
+      setOtp("");
+  
+    } catch (error) {
+      console.error("Resend OTP Error:", error);
+      setOtpError(error.message);
+    } finally {
+      setPageLoading(false);
+      setIsResending(false);
+    }
+  };
+
   const sendOTP = async () => {
     try {
-
       if (phone.length !== 10) {
         setError("Please enter a valid 10-digit phone number.");
         return;
@@ -202,7 +259,7 @@ function Signup() {
         title: "Signing in with Google...",
         message: "Connecting your Google account to Aquora.",
       });
-    
+
       setPageLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
 
@@ -221,9 +278,9 @@ function Signup() {
           photo: user.photoURL,
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok || !data.success) {
         throw new Error(data.message);
       }
@@ -237,280 +294,292 @@ function Signup() {
     } catch (err) {
       console.error(err);
       setError(err.message);
-    }finally{
+    } finally {
       setPageLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+  
+    const timer = setInterval(() => {
+      setResendCooldown((current) => current - 1);
+    }, 1000);
+  
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   return (
-  <AuthLayout
-    mode="signup"
-    eyebrow={step === "signup" ? "CREATE YOUR MOCKUP" : "VERIFY YOUR EMAIL"}
-    title={
-      step === "signup"
-        ? "Let's make water part of your brand."
-        : "One last step to get started."
-    }
-    description={
-      step === "signup"
-        ? "Create your account to begin your custom bottle journey."
-        : `We've sent a 6-digit verification code to ${formData.email}.`
-    }
-    footer={
-      <>
-        {step === "signup" ? (
-          <>
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-semibold text-sky-600 hover:text-sky-700"
+    <AuthLayout
+      mode="signup"
+      eyebrow={step === "signup" ? "CREATE YOUR MOCKUP" : "VERIFY YOUR EMAIL"}
+      title={
+        step === "signup"
+          ? "Let's make water part of your brand."
+          : "One last step to get started."
+      }
+      description={
+        step === "signup"
+          ? "Create your account to begin your custom bottle journey."
+          : `We've sent a 6-digit verification code to ${formData.email}.`
+      }
+      footer={
+        <>
+          {step === "signup" ? (
+            <>
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-semibold text-sky-600 hover:text-sky-700"
+              >
+                Sign in
+              </Link>
+            </>
+          ) : (
+            <>
+              Didn't receive the code?{" "}
+      
+              {resendCooldown > 0 ? (
+                <span className="font-semibold text-slate-400">
+                  Resend in {resendCooldown}s
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={isResending}
+                  className="font-semibold text-sky-600 transition hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isResending ? "Sending..." : "Resend code"}
+                </button>
+              )}
+            </>
+          )}
+        </>
+      }
+    >
+      {/* ========================================================= */}
+      {/* EMAIL SIGNUP */}
+      {/* ========================================================= */}
+
+      {signupMethod === "email" && step === "signup" && (
+        <>
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
+            <div>
+              <label
+                htmlFor="name"
+                className="mb-2 block text-sm font-semibold text-slate-700"
+              >
+                Full name
+              </label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Your full name"
+                className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-slate-700"
+              >
+                Work email
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@hotel.com"
+                className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-slate-700"
+              >
+                Create password
+              </label>
+
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minLength={8}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="At least 8 characters"
+                className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+
+            {/* Create Account */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-2 w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign in
-            </Link>
-          </>
-        ) : (
-          <>
-            Didn't receive the code?{" "}
+              Create Account
+            </button>
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+
+              <div className="relative flex justify-center">
+                <span className="bg-white px-4 text-sm text-slate-500">OR</span>
+              </div>
+            </div>
+
+            {/* Google */}
             <button
               type="button"
-              className="font-semibold text-sky-600 hover:text-sky-700"
+              onClick={handleGoogleSignIn}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Resend
+              <img
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                alt="Google"
+                className="h-5 w-5"
+              />
+              Continue with Google
             </button>
-          </>
-        )}
-      </>
-    }
-  >
-    {/* ========================================================= */}
-    {/* EMAIL SIGNUP */}
-    {/* ========================================================= */}
+          </form>
+        </>
+      )}
 
-    {signupMethod === "email" && step === "signup" && (
-      <>
-        {error && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      {/* ========================================================= */}
+      {/* EMAIL OTP VERIFICATION */}
+      {/* ========================================================= */}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
+      {signupMethod === "email" && step === "verify" && (
+        <form onSubmit={handleVerifyEmail} className="space-y-6">
+          {/* Error */}
+          {otpError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {otpError}
+            </div>
+          )}
+
+          {/* OTP */}
           <div>
             <label
-              htmlFor="name"
+              htmlFor="otp"
               className="mb-2 block text-sm font-semibold text-slate-700"
             >
-              Full name
+              Verification Code
             </label>
 
             <input
-              id="name"
-              name="name"
+              id="otp"
               type="text"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Your full name"
-              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={otp}
+              onChange={(event) => {
+                const value = event.target.value.replace(/\D/g, "").slice(0, 6);
+
+                setOtp(value);
+                setOtpError("");
+              }}
+              placeholder="Enter 6-digit code"
+              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
             />
           </div>
 
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-semibold text-slate-700"
-            >
-              Work email
-            </label>
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@hotel.com"
-              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-semibold text-slate-700"
-            >
-              Create password
-            </label>
-
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="At least 8 characters"
-              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-            />
-          </div>
-
-          {/* Create Account */}
+          {/* Verify */}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="mt-2 w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={otp.length !== 6}
+            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Create Account
+            Verify Email
           </button>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-
-            <div className="relative flex justify-center">
-              <span className="bg-white px-4 text-sm text-slate-500">
-                OR
-              </span>
-            </div>
-          </div>
-
-          {/* Google */}
+          {/* Back */}
           <button
             type="button"
-            onClick={handleGoogleSignIn}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              className="h-5 w-5"
-            />
-
-            Continue with Google
-          </button>
-        </form>
-      </>
-    )}
-
-    {/* ========================================================= */}
-    {/* EMAIL OTP VERIFICATION */}
-    {/* ========================================================= */}
-
-    {signupMethod === "email" && step === "verify" && (
-      <form onSubmit={handleVerifyEmail} className="space-y-6">
-        {/* Error */}
-        {otpError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {otpError}
-          </div>
-        )}
-
-        {/* OTP */}
-        <div>
-          <label
-            htmlFor="otp"
-            className="mb-2 block text-sm font-semibold text-slate-700"
-          >
-            Verification Code
-          </label>
-
-          <input
-            id="otp"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={otp}
-            onChange={(event) => {
-              const value = event.target.value
-                .replace(/\D/g, "")
-                .slice(0, 6);
-
-              setOtp(value);
+            onClick={() => {
+              setStep("signup");
+              setOtp("");
               setOtpError("");
             }}
-            placeholder="Enter 6-digit code"
-            className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-          />
-        </div>
-
-        {/* Verify */}
-        <button
-          type="submit"
-          disabled={otp.length !== 6}
-          className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Verify Email
-        </button>
-
-        {/* Back */}
-        <button
-          type="button"
-          onClick={() => {
-            setStep("signup");
-            setOtp("");
-            setOtpError("");
-          }}
-          className="w-full text-sm font-semibold text-sky-600 transition hover:text-sky-700"
-        >
-          ← Back to signup
-        </button>
-      </form>
-    )}
-
-    {/* ========================================================= */}
-    {/* PHONE SIGNUP */}
-    {/* ========================================================= */}
-
-    {signupMethod === "phone" && (
-      <div className="space-y-5">
-        <div>
-          <label
-            htmlFor="phone"
-            className="mb-2 block text-sm font-semibold text-slate-700"
+            className="w-full text-sm font-semibold text-sky-600 transition hover:text-sky-700"
           >
-            Phone Number
-          </label>
+            ← Back to signup
+          </button>
+        </form>
+      )}
 
-          <div className="flex overflow-hidden rounded-xl border border-sky-100 bg-sky-50/70 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-sky-100">
-            <span className="flex items-center border-r border-sky-100 px-4 font-semibold text-slate-700">
-              +91
-            </span>
+      {/* ========================================================= */}
+      {/* PHONE SIGNUP */}
+      {/* ========================================================= */}
 
-            <input
-              id="phone"
-              type="tel"
-              maxLength={10}
-              value={phone}
-              onChange={(e) =>
-                setPhone(e.target.value.replace(/\D/g, ""))
-              }
-              placeholder="9876543210"
-              className="w-full bg-transparent px-4 py-3 outline-none"
-            />
+      {signupMethod === "phone" && (
+        <div className="space-y-5">
+          <div>
+            <label
+              htmlFor="phone"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Phone Number
+            </label>
+
+            <div className="flex overflow-hidden rounded-xl border border-sky-100 bg-sky-50/70 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-sky-100">
+              <span className="flex items-center border-r border-sky-100 px-4 font-semibold text-slate-700">
+                +91
+              </span>
+
+              <input
+                id="phone"
+                type="tel"
+                maxLength={10}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="9876543210"
+                className="w-full bg-transparent px-4 py-3 outline-none"
+              />
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={sendOTP}
+            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700"
+          >
+            Send OTP
+          </button>
+
+          <div id="recaptcha-container" />
         </div>
-
-        <button
-          type="button"
-          onClick={sendOTP}
-          className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700"
-        >
-          Send OTP
-        </button>
-
-        <div id="recaptcha-container" />
-      </div>
-    )}
-  </AuthLayout>
-);
+      )}
+    </AuthLayout>
+  );
 }
 
 export default Signup;

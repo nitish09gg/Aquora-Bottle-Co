@@ -115,6 +115,12 @@ function Signup() {
   
       const data = await response.json();
   
+      console.log("Verify Email Response:", {
+        status: response.status,
+        ok: response.ok,
+        data,
+      });
+  
       if (!response.ok || !data.success) {
         throw new Error(
           data.message || "Email verification failed."
@@ -127,6 +133,7 @@ function Signup() {
         replace: true,
       });
     } catch (error) {
+      console.error("Verify Email Error:", error);
       setOtpError(error.message);
     } finally {
       setPageLoading(false);

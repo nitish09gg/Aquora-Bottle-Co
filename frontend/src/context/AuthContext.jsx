@@ -52,7 +52,6 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error(err);
     }
-
     setUser(null);
   };
 

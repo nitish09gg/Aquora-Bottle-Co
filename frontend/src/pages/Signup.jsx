@@ -432,7 +432,6 @@ function Signup() {
 
     return () => clearInterval(timer);
   }, [resendCooldown]);
-
   return (
     <AuthLayout
       mode="signup"
@@ -467,7 +466,7 @@ function Signup() {
                 Already have an account?{" "}
                 <Link
                   to="/login"
-                  className="font-semibold text-sky-600 hover:text-sky-700"
+                  className="font-semibold text-[#c9a24b] transition hover:text-[#e5c06a]"
                 >
                   Sign in
                 </Link>
@@ -476,7 +475,7 @@ function Signup() {
               <>
                 Didn't receive the code?{" "}
                 {resendCooldown > 0 ? (
-                  <span className="font-semibold text-slate-400">
+                  <span className="font-semibold text-slate-500">
                     Resend in {resendCooldown}s
                   </span>
                 ) : (
@@ -484,7 +483,7 @@ function Signup() {
                     type="button"
                     onClick={handleResendOTP}
                     disabled={isResending}
-                    className="font-semibold text-sky-600 transition hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="font-semibold text-[#c9a24b] transition hover:text-[#e5c06a] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isResending ? "Sending..." : "Resend code"}
                   </button>
@@ -496,7 +495,7 @@ function Signup() {
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold text-sky-600 hover:text-sky-700"
+                className="font-semibold text-[#c9a24b] transition hover:text-[#e5c06a]"
               >
                 Sign in
               </Link>
@@ -506,7 +505,7 @@ function Signup() {
               Didn't receive the code? {/* Phone resend will be added here */}
               <button
                 type="button"
-                className="font-semibold text-sky-600 transition hover:text-sky-700"
+                className="font-semibold text-[#c9a24b] transition hover:text-[#e5c06a]"
               >
                 Resend code
               </button>
@@ -520,7 +519,7 @@ function Signup() {
       {/* ========================================================= */}
 
       {step === "signup" && (
-        <div className="mb-6 flex rounded-xl bg-sky-50 p-1">
+        <div className="mb-6 flex rounded-xl border border-white/10 bg-white/5 p-1">
           <button
             type="button"
             onClick={() => {
@@ -530,8 +529,8 @@ function Signup() {
             }}
             className={`flex-1 rounded-lg py-3 text-sm font-semibold transition ${
               signupMethod === "email"
-                ? "bg-white text-sky-600 shadow"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-[#c9a24b] text-[#121212] shadow-lg shadow-[#c9a24b]/10"
+                : "text-slate-400 hover:text-white"
             }`}
           >
             Continue with Email
@@ -546,14 +545,15 @@ function Signup() {
             }}
             className={`flex-1 rounded-lg py-3 text-sm font-semibold transition ${
               signupMethod === "phone"
-                ? "bg-white text-sky-600 shadow"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-[#c9a24b] text-[#121212] shadow-lg shadow-[#c9a24b]/10"
+                : "text-slate-400 hover:text-white"
             }`}
           >
             Continue with Phone
           </button>
         </div>
       )}
+
       {/* ========================================================= */}
       {/* EMAIL SIGNUP */}
       {/* ========================================================= */}
@@ -561,93 +561,119 @@ function Signup() {
       {signupMethod === "email" && step === "signup" && (
         <>
           {error && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div>
               <label
                 htmlFor="name"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-300"
               >
                 Full name
               </label>
-
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Your full name"
-                className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-              />
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Your full name"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-11 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-[#c9a24b] focus:bg-white/10 focus:ring-4 focus:ring-[#c9a24b]/20"
+                />
+              </div>
             </div>
 
             {/* Email */}
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-300"
               >
                 Work email
               </label>
-
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@hotel.com"
-                className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-              />
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="m22 7-10 6L2 7" />
+                  </svg>
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@hotel.com"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-11 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-[#c9a24b] focus:bg-white/10 focus:ring-4 focus:ring-[#c9a24b]/20"
+                />
+              </div>
             </div>
 
             {/* Password */}
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-semibold text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-300"
               >
                 Create password
               </label>
-
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="At least 8 characters"
-                className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-              />
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+                    <rect x="4" y="11" width="16" height="10" rx="2" />
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                  </svg>
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="At least 8 characters"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-11 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-[#c9a24b] focus:bg-white/10 focus:ring-4 focus:ring-[#c9a24b]/20"
+                />
+              </div>
             </div>
 
             {/* Create Account */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-2 w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#c9a24b] py-3.5 font-semibold text-[#121212] shadow-lg shadow-[#c9a24b]/10 transition hover:-translate-y-0.5 hover:bg-[#e5c06a] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Create Account
+              {isSubmitting ? "Creating Account..." : "Create Account"}
+              {!isSubmitting && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                  <path d="M5 12h14" />
+                  <path d="m13 6 6 6-6 6" />
+                </svg>
+              )}
             </button>
 
             {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
+                <div className="w-full border-t border-white/10" />
               </div>
-
               <div className="relative flex justify-center">
-                <span className="bg-white px-4 text-sm text-slate-500">OR</span>
+                <span className="bg-[#0a0a0a] px-4 text-sm text-slate-500">OR</span>
               </div>
             </div>
 
@@ -655,7 +681,7 @@ function Signup() {
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/5 py-3.5 font-semibold text-white transition hover:border-[#c9a24b] hover:bg-white/10"
             >
               <img
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -676,7 +702,7 @@ function Signup() {
         <form onSubmit={handleVerifyEmail} className="space-y-6">
           {/* Error */}
           {otpError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {otpError}
             </div>
           )}
@@ -685,7 +711,7 @@ function Signup() {
           <div>
             <label
               htmlFor="otp"
-              className="mb-2 block text-sm font-semibold text-slate-700"
+              className="mb-2 block text-sm font-medium text-slate-300"
             >
               Verification Code
             </label>
@@ -699,12 +725,11 @@ function Signup() {
               value={otp}
               onChange={(event) => {
                 const value = event.target.value.replace(/\D/g, "").slice(0, 6);
-
                 setOtp(value);
                 setOtpError("");
               }}
               placeholder="Enter 6-digit code"
-              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-500 focus:border-[#c9a24b] focus:bg-white/10 focus:ring-4 focus:ring-[#c9a24b]/20"
             />
           </div>
 
@@ -712,7 +737,7 @@ function Signup() {
           <button
             type="submit"
             disabled={otp.length !== 6}
-            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-[#c9a24b] py-3.5 font-semibold text-[#121212] shadow-lg shadow-[#c9a24b]/10 transition hover:-translate-y-0.5 hover:bg-[#e5c06a] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Verify Email
           </button>
@@ -721,7 +746,7 @@ function Signup() {
           <button
             type="button"
             onClick={handleChangeEmail}
-            className="w-full text-sm font-semibold text-sky-600 transition hover:text-sky-700"
+            className="w-full text-sm font-semibold text-[#c9a24b] transition hover:text-[#e5c06a]"
           >
             ← Change email
           </button>
@@ -738,34 +763,41 @@ function Signup() {
           <div>
             <label
               htmlFor="phone-name"
-              className="mb-2 block text-sm font-semibold text-slate-700"
+              className="mb-2 block text-sm font-medium text-slate-300"
             >
               Full name
             </label>
-
-            <input
-              id="phone-name"
-              name="name"
-              type="text"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Your full name"
-              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
-            />
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-500">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <input
+                id="phone-name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Your full name"
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-11 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-[#c9a24b] focus:bg-white/10 focus:ring-4 focus:ring-[#c9a24b]/20"
+              />
+            </div>
           </div>
 
           {/* Phone */}
           <div>
             <label
               htmlFor="phone"
-              className="mb-2 block text-sm font-semibold text-slate-700"
+              className="mb-2 block text-sm font-medium text-slate-300"
             >
               Phone Number
             </label>
 
-            <div className="flex overflow-hidden rounded-xl border border-sky-100 bg-sky-50/70 focus-within:border-sky-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-sky-100">
-              <span className="flex items-center border-r border-sky-100 px-4 font-semibold text-slate-700">
+            <div className="flex overflow-hidden rounded-xl border border-white/10 bg-white/5 focus-within:border-[#c9a24b] focus-within:bg-white/10 focus-within:ring-4 focus-within:ring-[#c9a24b]/20">
+              <span className="flex items-center border-r border-white/10 px-4 text-sm font-semibold text-slate-300">
                 +91
               </span>
 
@@ -779,14 +811,14 @@ function Signup() {
                   setPhoneOtpError("");
                 }}
                 placeholder="9876543210"
-                className="w-full bg-transparent px-4 py-3 outline-none"
+                className="w-full bg-transparent px-4 py-3.5 text-white outline-none placeholder:text-slate-500"
               />
             </div>
           </div>
 
           {/* Error */}
           {phoneOtpError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {phoneOtpError}
             </div>
           )}
@@ -796,36 +828,43 @@ function Signup() {
             type="button"
             onClick={handlePhoneSignup}
             disabled={phoneIsSubmitting}
-            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c9a24b] py-3.5 font-semibold text-[#121212] shadow-lg shadow-[#c9a24b]/10 transition hover:-translate-y-0.5 hover:bg-[#e5c06a] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {phoneIsSubmitting ? "Sending..." : "Send Verification Code"}
+            {!phoneIsSubmitting && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            )}
           </button>
         </div>
       )}
+
       {signupMethod === "phone" && phoneStep === "verify" && (
         <form onSubmit={handleVerifyPhone} className="space-y-6">
           {phoneOtpError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {phoneOtpError}
             </div>
           )}
 
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-slate-900">
+            <h2 className="text-2xl font-bold text-white">
               Verify your phone
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-400">
               We've sent a 6-digit verification code to
             </p>
 
-            <p className="mt-1 font-semibold text-sky-600">+91 {phone}</p>
+            <p className="mt-1 font-semibold text-[#c9a24b]">+91 {phone}</p>
           </div>
 
           <div>
             <label
               htmlFor="phone-otp"
-              className="mb-2 block text-sm font-semibold text-slate-700"
+              className="mb-2 block text-sm font-medium text-slate-300"
             >
               Verification Code
             </label>
@@ -839,19 +878,18 @@ function Signup() {
               value={phoneOtp}
               onChange={(event) => {
                 const value = event.target.value.replace(/\D/g, "").slice(0, 6);
-
                 setPhoneOtp(value);
                 setPhoneOtpError("");
               }}
               placeholder="Enter 6-digit code"
-              className="w-full rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-center text-2xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-500 focus:border-[#c9a24b] focus:bg-white/10 focus:ring-4 focus:ring-[#c9a24b]/20"
             />
           </div>
 
           <button
             type="submit"
             disabled={phoneOtp.length !== 6}
-            className="w-full rounded-xl bg-sky-600 py-3.5 font-semibold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-[#c9a24b] py-3.5 font-semibold text-[#121212] shadow-lg shadow-[#c9a24b]/10 transition hover:-translate-y-0.5 hover:bg-[#e5c06a] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Verify Phone
           </button>
@@ -863,7 +901,7 @@ function Signup() {
               setPhoneOtp("");
               setPhoneOtpError("");
             }}
-            className="w-full text-sm font-semibold text-sky-600 hover:text-sky-700"
+            className="w-full text-sm font-semibold text-[#c9a24b] transition hover:text-[#e5c06a]"
           >
             ← Change phone number
           </button>
